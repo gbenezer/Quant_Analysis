@@ -7,7 +7,6 @@ import torch
 import torch.utils.data as data
 import numpy as np
 from ucimlrepo import fetch_ucirepo
-import torchvision.transforms.v2 as transforms
 from sklearn.preprocessing import normalize, scale
 
 
@@ -17,12 +16,6 @@ class SuperconductivityDataset(data.Dataset):
 
     def __init__(
         self,
-        transform=transforms.Compose(
-            [transforms.ToImage(), transforms.ToDtype(torch.float)]
-        ),
-        target_transform=transforms.Compose(
-            [transforms.ToImage(), transforms.ToDtype(torch.float)]
-        ),
         normalize_samples=True,
         standardize_features=True,
     ):
@@ -34,9 +27,7 @@ class SuperconductivityDataset(data.Dataset):
         if standardize_features:
             self.feature_ndarray = scale(self.feature_ndarray)
         self.target_ndarray = self.targets.to_numpy().squeeze().astype(dtype=np.float32)
-        self.transform = transform
         self.normalize_samples = normalize_samples
-        self.target_transform = target_transform
         self.metadata = self.data_object.metadata
         self.variables = self.data_object.variables
         self.number_samples = self.features.shape[0]
@@ -54,11 +45,9 @@ class SuperconductivityDataset(data.Dataset):
         # normalize vector if necessary
         if self.normalize_samples:
             sample = normalize(sample)
-
-        # transform sample and target to torch.Tensor
-        sample = self.transform(sample)
-        target = self.target_transform(target)
-        return sample, target
+            
+        # squeeze extra dimension out
+        return sample.squeeze(), target
 
 def get_superconductivity_data(
     test_fraction: float,
@@ -128,22 +117,12 @@ def get_superconductivity_data(
         persistent_workers=True,
     )
     
-    if validation_set:
-        return (
-            full_dataset,
-            train_set,
-            valid_set,
-            test_set,
-            train_loader,
-            valid_loader,
-            test_loader,
-        )
-        
-    else:
-        return (
-            full_dataset,
-            train_set,
-            test_set,
-            train_loader,
-            test_loader,
-        )
+    return (
+        full_dataset,
+        train_set,
+        valid_set,
+        test_set,
+        train_loader,
+        valid_loader,
+        test_loader,
+    )
