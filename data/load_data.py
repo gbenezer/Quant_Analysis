@@ -18,6 +18,7 @@ class SuperconductivityDataset(data.Dataset):
         self,
         normalize_samples=True,
         standardize_features=True,
+        dtype: torch.dtype = torch.float32
     ):
         super().__init__()
         self.data_object = fetch_ucirepo(id=464)
@@ -32,6 +33,7 @@ class SuperconductivityDataset(data.Dataset):
         self.variables = self.data_object.variables
         self.number_samples = self.features.shape[0]
         self.number_features = self.features.shape[1]
+        self.dtype = dtype
 
     def __len__(self):
         return self.number_samples
@@ -47,7 +49,15 @@ class SuperconductivityDataset(data.Dataset):
             sample = normalize(sample)
             
         # squeeze extra dimension out
-        return sample.squeeze(), target
+        sample = sample.squeeze()
+        
+        # cast the two outputs to torch tensors with a given dtype
+        # defaults to torch Float32
+        sample  = torch.tensor(sample, dtype=self.dtype)
+        target = torch.tensor(target, dtype=self.dtype)
+        
+        return sample, target
+        
 
 def get_superconductivity_data(
     test_fraction: float,
