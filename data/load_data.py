@@ -61,20 +61,23 @@ class SuperconductivityDataset(data.Dataset):
         return sample, target
 
 def get_superconductivity_data(
-    valid_fraction: float,
     test_fraction: float,
     random_seed: int,
     n_workers: int,
     batch_n: int,
+    validation_set: bool = False,
+    valid_fraction: float = 0.1,
 ):
     """_summary_
 
     Args:
-        valid_fraction (float): fraction of training data left over to use as validation data
         test_fraction (float): fraction of total data to use as test data
         random_seed (int): the number for seeding the random number generator
         n_workers (int): how many subprocesses the output dataloaders should use for loading data
         batch_n (int): batch size for the output dataloaders
+        validation_set (bool): whether or not to generate a validation set. Defaults to False.
+        valid_fraction (float): fraction of training data left over to use as validation data.
+            only used if validation_set = True.
 
     Returns:
         Dataset and DataLoader objects corresponding to training, validation, and testing sets of 
@@ -92,11 +95,20 @@ def get_superconductivity_data(
     )
 
     # splitting the remaining set into training and validation sets
-    valid_size = int(len(non_test_set) * valid_fraction)
-    train_size = len(non_test_set) - valid_size
-    train_set, valid_set = data.random_split(
-        non_test_set, [train_size, valid_size], generator=seed
-    )
+    if validation_set:
+        valid_size = int(len(non_test_set) * valid_fraction)
+        train_size = len(non_test_set) - valid_size
+        train_set, valid_set = data.random_split(
+            non_test_set, [train_size, valid_size], generator=seed
+        )
+        valid_loader = torch.utils.data.DataLoader(
+            dataset=valid_set,
+            num_workers=n_workers,
+            batch_size=batch_n,
+            persistent_workers=True,
+        )
+    else:
+        train_set = non_test_set
 
     # creating the DataLoader objects
     # creating the test data DataLoader
@@ -106,27 +118,30 @@ def get_superconductivity_data(
         batch_size=batch_n,
         persistent_workers=True,
     )
-
-    valid_loader = torch.utils.data.DataLoader(
-        dataset=valid_set,
-        num_workers=n_workers,
-        batch_size=batch_n,
-        persistent_workers=True,
-    )
-
+        
     test_loader = torch.utils.data.DataLoader(
         dataset=test_set,
         num_workers=n_workers,
         batch_size=batch_n,
         persistent_workers=True,
     )
-
-    return (
-        full_dataset,
-        train_set,
-        valid_set,
-        test_set,
-        train_loader,
-        valid_loader,
-        test_loader,
-    )
+    
+    if validation_set:
+        return (
+            full_dataset,
+            train_set,
+            valid_set,
+            test_set,
+            train_loader,
+            valid_loader,
+            test_loader,
+        )
+        
+    else:
+        return (
+            full_dataset,
+            train_set,
+            test_set,
+            train_loader,
+            test_loader,
+        )
