@@ -20,6 +20,10 @@ dependencies = [
     "ucimlrepo>=0.0.7",
 ]
 
+[project.urls]
+Homepage = "https://github.com/gbenezer/Quant_Analysis"
+Repository = "https://github.com/gbenezer/Quant_Analysis.git"
+
 [project.optional-dependencies]
 viz = [
     "plotly>=6.5.0",
