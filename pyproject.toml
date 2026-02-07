@@ -4,6 +4,10 @@ version = "0.1.0"
 description = "Regression Model Quantization Analysis Toolkit"
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [
+  {name = "Gil Benezer", email = "benezer.gi@northeastern.edu"},
+  {name = "Brent Garey", email = "garey.b@northeastern.edu"}
+]
 dependencies = [
     "lightning>=2.6.1",
     "pandas>=3.0.0",
