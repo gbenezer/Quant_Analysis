@@ -7,7 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "lightning>=2.6.1",
     "pandas>=3.0.0",
-    "pydantic>=2.12.5",
     "scikit-learn>=1.8.0",
     "scipy>=1.17.0",
     "torch>=2.10.0",
@@ -18,11 +17,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=9.0.2",
-    "pytest-cov>=7.0.0",
-    "ruff>=0.15.0",
-    "isort>=7.0.0"
+viz = [
+    "plotly>=6.5.0",
+    "seaborn>=0.13.2"
 ]
 
 [build-system]
@@ -67,4 +64,12 @@ omit = ["tests/*"]
 exclude_lines = [
     "pragma: no cover",
     "if __name__ == .__main__.:",
+]
+
+[dependency-groups]
+dev = [
+    "isort>=7.0.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.15.0",
 ]
