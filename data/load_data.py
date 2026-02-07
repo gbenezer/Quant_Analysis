@@ -109,6 +109,8 @@ def get_superconductivity_data(
         )
     else:
         train_set = non_test_set
+        valid_set = None
+        valid_loader = None
 
     # creating the DataLoader objects
     # creating the test data DataLoader
