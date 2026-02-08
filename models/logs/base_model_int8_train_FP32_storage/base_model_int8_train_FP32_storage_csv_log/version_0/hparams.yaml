@@ -1,0 +1,8 @@
+batch_norm: true
+learning_rate: 0.001
+neurons:
+- 324
+- 162
+- 81
+precision: int8
+specified_activation: relu
