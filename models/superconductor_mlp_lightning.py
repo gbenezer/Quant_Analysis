@@ -6,6 +6,7 @@ from typing import List, Literal
 import lightning as L
 import torch
 import torch.nn.functional as F
+from torch.export import export
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks.early_stopping import EarlyStopping
@@ -29,6 +30,7 @@ class SuperconductorLightning(L.LightningModule):
         model_dtype: torch.dtype = torch.float64,
     ):
         super().__init__()
+        self.save_hyperparameters()
         self.model = SuperconductorMLP(
             neurons=neurons,
             specified_activation=specified_activation,
@@ -36,6 +38,9 @@ class SuperconductorLightning(L.LightningModule):
             model_dtype=model_dtype,
         )
         self.lr = learning_rate
+
+    def forward(self, x: torch.Tensor):
+        return self.model(x)
 
     def training_step(self, batch: torch.Tensor):
 
@@ -48,7 +53,7 @@ class SuperconductorLightning(L.LightningModule):
             inputs = inputs.to(dtype=self.model.model_dtype)
 
         # evaluate in model precision
-        model_output = self.model(inputs).squeeze()
+        model_output = self.model(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -74,7 +79,7 @@ class SuperconductorLightning(L.LightningModule):
             inputs = inputs.to(dtype=self.model.model_dtype)
 
         # evaluate in model precision
-        model_output = self.model(inputs).squeeze()
+        model_output = self.model(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -93,7 +98,7 @@ class SuperconductorLightning(L.LightningModule):
             inputs = inputs.to(dtype=self.model.model_dtype)
 
         # evaluate in model precision
-        model_output = self.model(inputs).squeeze()
+        model_output = self.model(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -140,6 +145,7 @@ def construct_mlp(
         learning_rate=learning_rate,
         model_dtype=model_dtype,
     )
+    mlp.compile()
 
     trainer = Trainer(
         logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
@@ -160,3 +166,55 @@ def construct_mlp(
         val_dataloaders=valid_loader,
     )
     trainer.test(model=mlp, dataloaders=test_loader)
+
+
+def export_mlp_to_onnx(
+    checkpoint_path: Path = (
+        Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt"
+    ),
+    onnx_path: Path = (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx"),
+    model_dtype: torch.dtype = torch.float32,
+    dynamo: bool = False,
+    **kwargs,
+):
+    model = (
+        SuperconductorLightning.load_from_checkpoint(
+            checkpoint_path=checkpoint_path, **kwargs
+        )
+        .eval()
+        .to(dtype=model_dtype)
+    )
+    input_sample = torch.rand((1, 81), dtype=model_dtype)
+    onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    model.to_onnx(file_path=onnx_path, input_sample=input_sample, dynamo=dynamo)
+
+if __name__ = "__main__":
+    
+    # train the 4 base models and save them both to checkpoint files and ONNX files
+    construct_mlp(name="base_model_FP32")
+    construct_mlp(name="base_model_FP64", model_dtype=torch.float64)
+    construct_mlp(name="base_model_FP32_no_norm", batch_norm=False)
+    construct_mlp(
+        name="base_model_FP64_no_norm", batch_norm=False, model_dtype=torch.float64
+    )
+
+    # name, model dtype, and dynamo/batch_norm
+    elements = [
+        ("base_model_FP32", torch.float32, False),
+        ("base_model_FP64", torch.float64, False),
+        ("base_model_FP32_no_norm", torch.float32, True),
+        ("base_model_FP64_no_norm", torch.float64, True),
+    ]
+    
+    # export to onnx
+    for name, model_dtype, d in elements:
+        
+        bn = not d
+
+        export_mlp_to_onnx(
+            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{name}.ckpt"),
+            onnx_path=(MODEL_PATH / "onnx" / f"{name}.onnx"),
+            model_dtype=model_dtype,
+            dynamo=d,
+            batch_norm=bn,
+        )
