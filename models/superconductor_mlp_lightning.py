@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import lightning as L
 import torch
@@ -8,13 +8,14 @@ import torch.nn.functional as F
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+from lightning.fabric.plugins.precision.precision import _PRECISION_INPUT
 from torch.export import export
 
 from data import get_superconductivity_data
 from models import SuperconductorMLP
 
 MODEL_PATH = Path(os.getcwd()) / "models"
-NUMBER_EPOCHS = 100
+NUMBER_EPOCHS = 25
 
 
 class SuperconductorLightning(L.LightningModule):
@@ -135,6 +136,7 @@ def construct_mlp(
     seed: int = 42,
     n_workers: int = 4,
     batch_n: int = 64,
+    precision: Optional[_PRECISION_INPUT] = None
 ):
 
     seed_everything(seed)
@@ -162,6 +164,7 @@ def construct_mlp(
             ModelCheckpoint(checkpoint_directory, filename=name),
         ],
         max_epochs=max_epochs,
+        precision=precision
     )
 
     trainer.fit(
@@ -221,12 +224,12 @@ if __name__ == "__main__":
 
     # name, model dtype, and batch_norm
     elements = [
-        ("base_model_FP32", torch.float32, True),
-        ("base_model_FP32_no_norm", torch.float32, False),
+        ("base_model_FP32", torch.float32),
+        ("base_model_FP32_no_norm", torch.float32),
     ]
 
     # export to onnx
-    for model_name, model_dtype, bn in elements:
+    for model_name, model_dtype in elements:
         export_mlp_to_onnx(
             checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
             onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
