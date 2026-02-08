@@ -179,7 +179,7 @@ def export_mlp_to_onnx(
 ):
     model = (
         SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=checkpoint_path, **kwargs
+            checkpoint_path=checkpoint_path, map_location='cpu', **kwargs
         )
         .eval()
         .to(dtype=model_dtype)
@@ -187,16 +187,36 @@ def export_mlp_to_onnx(
     input_sample = torch.rand((1, 81), dtype=model_dtype)
     onnx_path.parent.mkdir(parents=True, exist_ok=True)
     model.to_onnx(file_path=onnx_path, input_sample=input_sample, dynamo=dynamo)
+    
+def export_mlp_to_pt2(
+    checkpoint_path: Path = (
+        Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt"
+    ),
+    export_path: Path = (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2"),
+    model_dtype: torch.dtype = torch.float32,
+    **kwargs,
+):
+    model = (
+        SuperconductorLightning.load_from_checkpoint(
+            checkpoint_path=checkpoint_path, map_location="cpu", **kwargs
+        )
+        .eval()
+        .to(dtype=model_dtype)
+    )
+    input_sample = torch.rand((1, 81), dtype=model_dtype)
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    exported_program = export(model, (input_sample,))
+    torch.export.save(exported_program, export_path)
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     
     # train the 4 base models and save them both to checkpoint files and ONNX files
-    construct_mlp(name="base_model_FP32")
-    construct_mlp(name="base_model_FP64", model_dtype=torch.float64)
-    construct_mlp(name="base_model_FP32_no_norm", batch_norm=False)
-    construct_mlp(
-        name="base_model_FP64_no_norm", batch_norm=False, model_dtype=torch.float64
-    )
+    # construct_mlp(name="base_model_FP32")
+    # construct_mlp(name="base_model_FP64", model_dtype=torch.float64)
+    # construct_mlp(name="base_model_FP32_no_norm", batch_norm=False)
+    # construct_mlp(
+    #     name="base_model_FP64_no_norm", batch_norm=False, model_dtype=torch.float64
+    # )
 
     # name, model dtype, and dynamo/batch_norm
     elements = [
@@ -211,10 +231,16 @@ if __name__ = "__main__":
         
         bn = not d
 
-        export_mlp_to_onnx(
+        # export_mlp_to_onnx(
+        #     checkpoint_path=(MODEL_PATH / "checkpoints" / f"{name}.ckpt"),
+        #     onnx_path=(MODEL_PATH / "onnx" / f"{name}.onnx"),
+        #     model_dtype=model_dtype,
+        #     dynamo=d,
+        #     batch_norm=bn,
+        # )
+        
+        export_mlp_to_pt2(
             checkpoint_path=(MODEL_PATH / "checkpoints" / f"{name}.ckpt"),
-            onnx_path=(MODEL_PATH / "onnx" / f"{name}.onnx"),
-            model_dtype=model_dtype,
-            dynamo=d,
-            batch_norm=bn,
+            export_path=(MODEL_PATH / "pt2" / f"{name}.pt2"),
+            model_dtype=model_dtype
         )
