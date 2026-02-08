@@ -1,5 +1,4 @@
 import os
-import pstats
 from pathlib import Path
 from typing import List, Literal
 
@@ -9,13 +8,13 @@ import torch.nn.functional as F
 from torch.export import export
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from lightning.pytorch.loggers import CSVLogger
 
 from data import get_superconductivity_data
 from models import SuperconductorMLP
 
 MODEL_PATH = Path(os.getcwd()) / "models"
+NUMBER_EPOCHS = 100
 
 
 class SuperconductorLightning(L.LightningModule):
@@ -118,6 +117,7 @@ def construct_mlp(
     batch_norm: bool = True,
     learning_rate: float = 1e-3,
     model_dtype: torch.dtype = torch.float64,
+    max_epochs: int = 1000,
     name: str = "placeholder_name",
     logging_directory: Path = (Path(os.getcwd()) / "models" / "logs"),
     checkpoint_directory: Path = (Path(os.getcwd()) / "models" / "checkpoints"),
@@ -150,14 +150,9 @@ def construct_mlp(
     trainer = Trainer(
         logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
         callbacks=[
-            EarlyStopping(
-                monitor="valid_loss",
-                mode="min",
-                check_on_train_epoch_end=False,
-                patience=5,
-            ),
             ModelCheckpoint(checkpoint_directory, filename=name),
         ],
+        max_epochs=max_epochs,
     )
 
     trainer.fit(
@@ -212,11 +207,18 @@ def export_mlp_to_pt2(
 if __name__ == "__main__":
 
     # train the 4 base models and save them both to checkpoint files and ONNX files
-    construct_mlp(name="base_model_FP32")
-    construct_mlp(name="base_model_FP64", model_dtype=torch.float64)
-    construct_mlp(name="base_model_FP32_no_norm", batch_norm=False)
+    construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
     construct_mlp(
-        name="base_model_FP64_no_norm", batch_norm=False, model_dtype=torch.float64
+        name="base_model_FP64", max_epochs=NUMBER_EPOCHS, model_dtype=torch.float64
+    )
+    construct_mlp(
+        name="base_model_FP32_no_norm", max_epochs=NUMBER_EPOCHS, batch_norm=False
+    )
+    construct_mlp(
+        name="base_model_FP64_no_norm",
+        max_epochs=NUMBER_EPOCHS,
+        batch_norm=False,
+        model_dtype=torch.float64,
     )
 
     # name, model dtype, and batch_norm
