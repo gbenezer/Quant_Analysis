@@ -3,11 +3,11 @@
 # re-used prior work from CS 6140 project at
 # https://github.com/gbenezer/BO-for-NN-HPO-Project/blob/main/src/network/load_data.py
 
+import numpy as np
 import torch
 import torch.utils.data as data
-import numpy as np
-from ucimlrepo import fetch_ucirepo
 from sklearn.preprocessing import normalize, scale
+from ucimlrepo import fetch_ucirepo
 
 
 # define Dataset class for Superconductivity data
@@ -18,7 +18,7 @@ class SuperconductivityDataset(data.Dataset):
         self,
         normalize_samples=True,
         standardize_features=True,
-        dtype: torch.dtype = torch.float32
+        dtype: torch.dtype = torch.float32,
     ):
         super().__init__()
         self.data_object = fetch_ucirepo(id=464)
@@ -47,17 +47,17 @@ class SuperconductivityDataset(data.Dataset):
         # normalize vector if necessary
         if self.normalize_samples:
             sample = normalize(sample)
-            
+
         # squeeze extra dimension out
         sample = sample.squeeze()
-        
+
         # cast the two outputs to torch tensors with a given dtype
         # defaults to torch Float32
-        sample  = torch.tensor(sample, dtype=self.dtype)
+        sample = torch.tensor(sample, dtype=self.dtype)
         target = torch.tensor(target, dtype=self.dtype)
-        
+
         return sample, target
-        
+
 
 def get_superconductivity_data(
     test_fraction: float,
@@ -80,7 +80,7 @@ def get_superconductivity_data(
             only used if validation_set = True.
 
     Returns:
-        Dataset and DataLoader objects corresponding to training, validation, and testing sets of 
+        Dataset and DataLoader objects corresponding to training, validation, and testing sets of
             physicochemical features of superconductors along with associated critical temperatures
     """
     # instantiating the full dataset
@@ -120,14 +120,14 @@ def get_superconductivity_data(
         batch_size=batch_n,
         persistent_workers=True,
     )
-        
+
     test_loader = torch.utils.data.DataLoader(
         dataset=test_set,
         num_workers=n_workers,
         batch_size=batch_n,
         persistent_workers=True,
     )
-    
+
     return (
         full_dataset,
         train_set,
