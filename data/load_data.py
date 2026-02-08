@@ -66,7 +66,7 @@ def get_superconductivity_data(
     random_seed: int,
     n_workers: int,
     batch_n: int,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype = torch.float32,
     validation_set: bool = False,
     valid_fraction: float = 0.1,
 ):
