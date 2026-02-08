@@ -13,7 +13,6 @@ class SuperconductorMLP(nn.Module):
             "relu", "leaky_relu", "elu", "gelu", "celu"
         ] = "relu",
         batch_norm: bool = True,
-        model_dtype: torch.dtype = torch.float64,
     ):
         super().__init__()
 
@@ -57,7 +56,7 @@ class SuperconductorMLP(nn.Module):
 
         # construct the linear layer sequence adaptively
         self.linear_stack = nn.Sequential(
-            nn.Linear(in_features=81, out_features=neurons[0], dtype=model_dtype)
+            nn.Linear(in_features=81, out_features=neurons[0])
         )
 
         for layer in range(1, number_hidden_layers):
@@ -67,9 +66,7 @@ class SuperconductorMLP(nn.Module):
 
             # if batch norm is specified, add a 1D batch normalization layer
             if batch_norm:
-                norm_layer = nn.BatchNorm1d(
-                    num_features=layer_input_features, dtype=model_dtype
-                )
+                norm_layer = nn.BatchNorm1d(num_features=layer_input_features)
                 self.linear_stack.append(norm_layer)
 
             # add the activation layer
@@ -77,25 +74,16 @@ class SuperconductorMLP(nn.Module):
 
             # add the linear layer
             current_linear_layer = nn.Linear(
-                in_features=layer_input_features,
-                out_features=layer_output_features,
-                dtype=model_dtype,
+                in_features=layer_input_features, out_features=layer_output_features
             )
             self.linear_stack.append(current_linear_layer)
 
         # add the last layers
         # regressing to temperature
         if batch_norm:
-            self.linear_stack.append(
-                nn.BatchNorm1d(num_features=neurons[-1], dtype=model_dtype)
-            )
+            self.linear_stack.append(nn.BatchNorm1d(num_features=neurons[-1]))
         self.linear_stack.append(self.activation)
-        self.linear_stack.append(
-            nn.Linear(in_features=neurons[-1], out_features=1, dtype=model_dtype)
-        )
-
-        # store the intended dtype for the model
-        self.model_dtype = model_dtype
+        self.linear_stack.append(nn.Linear(in_features=neurons[-1], out_features=1))
 
     def forward(self, x):
         return self.linear_stack(x).squeeze()
