@@ -36,7 +36,7 @@ class SuperconductorLightning(L.LightningModule):
 
     def training_step(self, batch, batch_idx):
         inputs, target = batch
-        model_output = self.model(inputs)
+        model_output = self.model(inputs).squeeze()
         loss = F.l1_loss(model_output, target=target)
 
         # logs metrics for each training_step,
@@ -47,15 +47,15 @@ class SuperconductorLightning(L.LightningModule):
 
         return loss
 
-    def validate_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx):
         inputs, target = batch
-        model_output = self.model(inputs, target)
+        model_output = self.model(inputs).squeeze()
         loss = F.l1_loss(model_output, target=target)
         self.log("valid_loss", loss)
 
     def test_step(self, batch, batch_idx):
         inputs, target = batch
-        model_output = self.model(inputs, target)
+        model_output = self.model(inputs).squeeze()
         loss = F.l1_loss(model_output, target=target)
         self.log("test_loss", loss)
 
@@ -73,6 +73,12 @@ _, _, _, _, train_loader, valid_loader, test_loader = get_superconductivity_data
     validation_set=True,
 )
 
+# validate the architecture
+# test_module = SuperconductorMLP()
+# print(test_module)
+# train_features, train_labels = next(iter(train_loader))
+# print(train_features.shape)
+# print(train_features)
 
 # train the base model
 seed_everything(seed=42, workers=True)
@@ -80,7 +86,9 @@ superconductor_lightning_mlp = SuperconductorLightning()
 trainer = Trainer(
     logger=CSVLogger(MODEL_PATH, name="logs"),
     callbacks=[
-        EarlyStopping(monitor="valid_loss", mode="min", check_on_train_epoch_end=False),
+        EarlyStopping(
+            monitor="valid_loss", mode="min", check_on_train_epoch_end=False, patience=5
+        ),
         ModelCheckpoint((MODEL_PATH / "checkpoints"), filename="base_model_checkpoint"),
     ],
 )

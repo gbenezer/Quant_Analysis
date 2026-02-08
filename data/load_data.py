@@ -64,6 +64,7 @@ def get_superconductivity_data(
     random_seed: int,
     n_workers: int,
     batch_n: int,
+    dtype: torch.dtype = torch.float64,
     validation_set: bool = False,
     valid_fraction: float = 0.1,
 ):
@@ -83,7 +84,7 @@ def get_superconductivity_data(
             physicochemical features of superconductors along with associated critical temperatures
     """
     # instantiating the full dataset
-    full_dataset = SuperconductivityDataset()
+    full_dataset = SuperconductivityDataset(dtype=dtype)
 
     # splitting off the test dataset
     test_size = int(len(full_dataset) * test_fraction)
