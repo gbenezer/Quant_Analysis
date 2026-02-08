@@ -5,9 +5,11 @@ from typing import List, Literal, Optional
 import lightning as L
 import torch
 import torch.nn.functional as F
+import bitsandbytes as bnb
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+from lightning.pytorch.plugins import BitsandbytesPrecision
 from lightning.fabric.plugins.precision.precision import _PRECISION_INPUT
 from torch.export import export
 
@@ -31,6 +33,10 @@ class SuperconductorLightning(L.LightningModule):
         ] = "relu",
         batch_norm: bool = True,
         learning_rate: float = 1e-3,
+        precision: Optional[
+            Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
+            | _PRECISION_INPUT
+        ] = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -40,6 +46,7 @@ class SuperconductorLightning(L.LightningModule):
             batch_norm=batch_norm,
         )
         self.lr = learning_rate
+        self.precision = precision
 
     def forward(self, x: torch.Tensor):
         """_summary_
@@ -118,8 +125,18 @@ class SuperconductorLightning(L.LightningModule):
 
         self.log("test_loss", loss)
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
+    def configure_optimizers(
+        self,
+        precision: Optional[
+            Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
+            | _PRECISION_INPUT
+        ] = None,
+    ):
+        bnb_precisions = ["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
+        if precision in bnb_precisions:
+            optimizer = bnb.optim.Adam8bit(self.parameters(), lr=self.lr)
+        else:
+            optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         return optimizer
 
 
@@ -136,7 +153,11 @@ def construct_mlp(
     seed: int = 42,
     n_workers: int = 4,
     batch_n: int = 64,
-    precision: Optional[_PRECISION_INPUT] = None
+    use_bnb: bool = False,
+    precision: Optional[
+        Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
+        | _PRECISION_INPUT
+    ] = None,
 ):
 
     seed_everything(seed)
@@ -155,17 +176,49 @@ def construct_mlp(
         specified_activation=specified_activation,
         batch_norm=batch_norm,
         learning_rate=learning_rate,
+        precision=precision,
     )
     mlp.compile()
 
-    trainer = Trainer(
-        logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
-        callbacks=[
-            ModelCheckpoint(checkpoint_directory, filename=name),
-        ],
-        max_epochs=max_epochs,
-        precision=precision
-    )
+    if use_bnb:
+
+        acceptable_precisions = [
+            "nf4",
+            "nf4-dq",
+            "fp4",
+            "fp4-dq",
+            "int8",
+            "int8-training",
+        ]
+
+        # input validation
+        if precision not in acceptable_precisions:
+            print(
+                "The acceptable precision settings for BitsAndBytes quantized training:"
+            )
+            print(f"{["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]}")
+            raise ValueError(f"Precision {precision} not supported by BitsAndBytes.")
+
+        bnb_precision = BitsandbytesPrecision(mode=precision)
+
+        trainer = Trainer(
+            logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
+            callbacks=[
+                ModelCheckpoint(checkpoint_directory, filename=name),
+            ],
+            max_epochs=max_epochs,
+            plugins=bnb_precision,
+        )
+    else:
+
+        trainer = Trainer(
+            logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
+            callbacks=[
+                ModelCheckpoint(checkpoint_directory, filename=name),
+            ],
+            max_epochs=max_epochs,
+            precision=precision,
+        )
 
     trainer.fit(
         model=mlp,
@@ -182,6 +235,15 @@ def export_mlp_to_onnx(
     onnx_path: Path = (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx"),
     model_export_dtype: torch.dtype = torch.float32,
 ):
+    """_summary_
+
+    Args:
+        checkpoint_path (Path, optional): _description_. 
+            Defaults to ( Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt" ).
+        onnx_path (Path, optional): _description_. 
+            Defaults to (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx").
+        model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
+    """
     model = (
         SuperconductorLightning.load_from_checkpoint(
             checkpoint_path=checkpoint_path,
@@ -202,6 +264,15 @@ def export_mlp_to_pt2(
     export_path: Path = (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2"),
     model_export_dtype: torch.dtype = torch.float32,
 ):
+    """_summary_
+
+    Args:
+        checkpoint_path (Path, optional): _description_.
+            Defaults to ( Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt" ).
+        export_path (Path, optional): _description_.
+            Defaults to (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2").
+        model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
+    """
     model = (
         SuperconductorLightning.load_from_checkpoint(
             checkpoint_path=checkpoint_path, map_location="cpu"
@@ -216,7 +287,7 @@ def export_mlp_to_pt2(
 
 
 if __name__ == "__main__":
-    # train the 4 base models and save them both to checkpoint files and ONNX files
+    # train the base models and save them both to checkpoint files and ONNX files
     construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
     construct_mlp(
         name="base_model_FP32_no_norm", max_epochs=NUMBER_EPOCHS, batch_norm=False
