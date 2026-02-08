@@ -10,10 +10,21 @@ class SuperconductorMLP(nn.Module):
         self,
         neurons: List[int] = [324, 162, 81],
         specified_activation: Literal[
-            "relu", "leaky_relu", "elu", "gelu", "celu"
-        ] = "relu",
+            'relu', 'leaky_relu', 'elu', 'gelu', 'celu'
+        ] = 'relu',
         batch_norm: bool = True,
     ):
+        """_summary_
+
+        Args:
+            neurons (List[int], optional): _description_. Defaults to [324, 162, 81].
+            specified_activation (Literal[ 'relu', 'leaky_relu', 'elu', 'gelu', 'celu'], optional): _description_. Defaults to 'relu'.
+            batch_norm (bool, optional): _description_. Defaults to True.
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
         super().__init__()
 
         # validate input
@@ -85,7 +96,15 @@ class SuperconductorMLP(nn.Module):
         self.linear_stack.append(self.activation)
         self.linear_stack.append(nn.Linear(in_features=neurons[-1], out_features=1))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
+        """_summary_
+
+        Args:
+            x (torch.Tensor): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return self.linear_stack(x).squeeze()
 
 

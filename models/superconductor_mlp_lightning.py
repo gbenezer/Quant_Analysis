@@ -18,6 +18,10 @@ NUMBER_EPOCHS = 100
 
 
 class SuperconductorLightning(L.LightningModule):
+    """
+    _summary_
+    """
+
     def __init__(
         self,
         neurons: List[int] = [324, 162, 81],
@@ -37,10 +41,25 @@ class SuperconductorLightning(L.LightningModule):
         self.lr = learning_rate
 
     def forward(self, x: torch.Tensor):
+        """_summary_
+
+        Args:
+            x (torch.Tensor): _description_
+
+        Returns:
+            _type_: _description_
+        """
         return self.model(x)
 
     def training_step(self, batch: torch.Tensor):
+        """_summary_
 
+        Args:
+            batch (torch.Tensor): _description_
+
+        Returns:
+            _type_: _description_
+        """
         # get the data for the mini-batch
         inputs, target = batch
 
@@ -61,7 +80,11 @@ class SuperconductorLightning(L.LightningModule):
         return loss
 
     def validation_step(self, batch: torch.Tensor):
+        """_summary_
 
+        Args:
+            batch (torch.Tensor): _description_
+        """
         # get the data for the mini-batch
         inputs, target = batch
 
@@ -76,7 +99,11 @@ class SuperconductorLightning(L.LightningModule):
         self.log("valid_loss", loss)
 
     def test_step(self, batch: torch.Tensor):
+        """_summary_
 
+        Args:
+            batch (torch.Tensor): _description_
+        """
         # get the data for the mini-batch
         inputs, target = batch
 
@@ -203,12 +230,11 @@ if __name__ == "__main__":
         export_mlp_to_onnx(
             checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
             onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
-            model_dtype=model_dtype,
-            batch_norm=bn,
+            model_export_dtype=model_dtype,
         )
 
         export_mlp_to_pt2(
             checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
             export_path=(MODEL_PATH / "pt2" / f"{model_name}.pt2"),
-            model_dtype=model_dtype,
+            model_export_dtype=model_dtype,
         )
