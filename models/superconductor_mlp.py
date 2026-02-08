@@ -98,7 +98,7 @@ class SuperconductorMLP(nn.Module):
         self.model_dtype = model_dtype
 
     def forward(self, x):
-        return self.linear_stack(x)
+        return self.linear_stack(x).squeeze()
 
 
 # small output smoke test to evaluate factory functionality
