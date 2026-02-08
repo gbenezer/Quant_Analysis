@@ -71,12 +71,8 @@ class SuperconductorLightning(L.LightningModule):
         # get the data for the mini-batch
         inputs, target = batch
 
-        # evaluate in input precision
-        model_output = self.model.to(dtype=inputs.dtype)(inputs)
-
-        # cast the model output back to the target dtype for loss calculation
-        target_dtype = target.dtype
-        output = model_output.to(dtype=target_dtype)
+        # evaluate
+        output = self.model(inputs)
         loss = F.l1_loss(output, target)
 
         # logs metrics for each training_step,
@@ -96,12 +92,8 @@ class SuperconductorLightning(L.LightningModule):
         # get the data for the mini-batch
         inputs, target = batch
 
-        # evaluate in input precision
-        model_output = self.model.to(dtype=inputs.dtype)(inputs)
-
-        # cast the model output back to the target dtype for loss calculation
-        target_dtype = target.dtype
-        output = model_output.to(dtype=target_dtype)
+        # evaluate
+        output = self.model(inputs)
         loss = F.l1_loss(output, target)
 
         self.log("valid_loss", loss)
@@ -115,12 +107,8 @@ class SuperconductorLightning(L.LightningModule):
         # get the data for the mini-batch
         inputs, target = batch
 
-        # evaluate in input precision
-        model_output = self.model.to(dtype=inputs.dtype)(inputs)
-
-        # cast the model output back to the target dtype for loss calculation
-        target_dtype = target.dtype
-        output = model_output.to(dtype=target_dtype)
+        # evaluate
+        output = self.model(inputs)
         loss = F.l1_loss(output, target)
 
         self.log("test_loss", loss)
@@ -238,9 +226,9 @@ def export_mlp_to_onnx(
     """_summary_
 
     Args:
-        checkpoint_path (Path, optional): _description_. 
+        checkpoint_path (Path, optional): _description_.
             Defaults to ( Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt" ).
-        onnx_path (Path, optional): _description_. 
+        onnx_path (Path, optional): _description_.
             Defaults to (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx").
         model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
     """
@@ -289,17 +277,73 @@ def export_mlp_to_pt2(
 if __name__ == "__main__":
     # train the base models and save them both to checkpoint files and ONNX files
     construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
-    construct_mlp(
-        name="base_model_FP32_no_norm", max_epochs=NUMBER_EPOCHS, batch_norm=False
+
+    # export
+    export_mlp_to_onnx(
+        checkpoint_path=(MODEL_PATH / "checkpoints" / "base_model_FP32.ckpt"),
+        onnx_path=(MODEL_PATH / "onnx" / "base_model_FP32.onnx"),
+        model_export_dtype=torch.float32,
     )
 
-    # name, model dtype, and batch_norm
+    export_mlp_to_pt2(
+        checkpoint_path=(MODEL_PATH / "checkpoints" / "base_model_FP32.ckpt"),
+        export_path=(MODEL_PATH / "pt2" / "base_model_FP32.pt2"),
+        model_export_dtype=torch.float32,
+    )
+
+    # train the lower precision models and save them to checkpoint files and ONNX files
+    construct_mlp(
+        name="base_model_mixedFP16_train_FP32_storage",
+        max_epochs=NUMBER_EPOCHS,
+        precision="16-mixed",
+    )
+    construct_mlp(
+        name="base_model_mixedBF16_train_FP32_storage",
+        max_epochs=NUMBER_EPOCHS,
+        precision="bf16-mixed",
+    )
+
+    # name and model dtype
     elements = [
-        ("base_model_FP32", torch.float32),
-        ("base_model_FP32_no_norm", torch.float32),
+        ("base_model_mixedFP16_train_FP32_storage", torch.float32),
+        ("base_model_mixedBF16_train_FP32_storage", torch.float32),
     ]
 
-    # export to onnx
+    # export
+    for model_name, model_dtype in elements:
+        export_mlp_to_onnx(
+            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
+            onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
+            model_export_dtype=model_dtype,
+        )
+
+        export_mlp_to_pt2(
+            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
+            export_path=(MODEL_PATH / "pt2" / f"{model_name}.pt2"),
+            model_export_dtype=model_dtype,
+        )
+
+    # train the lower precision models and save them to checkpoint files and ONNX files
+    construct_mlp(
+        name="base_model_nf4_train_FP32_storage",
+        max_epochs=NUMBER_EPOCHS,
+        use_bnb=True,
+        precision="nf4",
+    )
+    construct_mlp(
+        name="base_model_int8_train_FP32_storage",
+        max_epochs=NUMBER_EPOCHS,
+        use_bnb=True,
+        precision="int8",
+    )
+
+    # name and model dtype
+    elements = [
+        ("base_model_nf4_train_FP32_storage", torch.float32),
+        ("base_model_int8_train_FP32_storage", torch.float32),
+    ]
+
+    # export
     for model_name, model_dtype in elements:
         export_mlp_to_onnx(
             checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
