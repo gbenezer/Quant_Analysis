@@ -1,0 +1,114 @@
+---
+title: "Why Naive Low-Precision Training Fails"
+subtitle: "A reference on numerical precision pitfalls in neural network training"
+format: html
+---
+
+## The Problem
+
+Casting all model weights and layers to float16 (or lower) and training directly
+in that precision leads to `NaN` losses and training divergence, even when float32
+and float64 training converge without issue. This document explains why.
+
+## Float16 Limitations
+
+| Property                | float32       | float16       |
+|-------------------------|---------------|---------------|
+| Max representable value | ~3.4e38       | ~65,504       |
+| Decimal precision       | ~7.2 digits   | ~3.3 digits   |
+| Smallest normal value   | ~1.2e-38      | ~6.1e-5       |
+
+These constraints create three categories of failure during training.
+
+## Failure Mode 1: BatchNorm Instability
+
+`BatchNorm` computes running mean and variance over mini-batches. The variance
+calculation squares differences and sums them. In float16:
+
+- Squared intermediate values overflow the ~65,504 ceiling, producing `inf` and
+  then `NaN`.
+- Accumulated sums lose precision, and the computed variance can become negative
+  from rounding error. Taking `sqrt(negative)` produces `NaN`.
+
+This is the most common source of `NaN` in naive float16 training. PyTorch's own
+documentation recommends that `BatchNorm` always operate in float32.
+
+## Failure Mode 2: Gradient Update Swamping
+
+Optimizers like AdamW update weights via:
+
+```
+weight = weight - lr * adjusted_gradient
+```
+
+With typical learning rates (~1e-3) and Adam-scaled gradients, the actual update
+magnitude is often 1e-5 to 1e-7. Float16's precision near a value of 1.0 is only
+~1e-3, so updates smaller than that **round away to zero**. The weights never
+change and training stalls.
+
+Additionally, AdamW stores first and second moment estimates in the same dtype as
+the parameters. The second moment accumulates squared gradients, which easily
+overflow float16's range.
+
+## Failure Mode 3: Activation Overflow
+
+For a layer with $n$ input features, the pre-activation value is:
+
+$$
+z = \sum_{i=1}^{n} w_i x_i + b
+$$
+
+With $n = 81$ inputs (as in the superconductor MLP), summing 81 products without
+careful scaling can push intermediate values past float16's 65,504 ceiling.
+
+## What Mixed Precision Actually Does
+
+When frameworks advertise "16-bit training," they mean **mixed precision**, not
+pure float16 arithmetic. Mixed precision keeps three things in float32:
+
+1. **Master weights** --- so small gradient updates accumulate correctly.
+2. **BatchNorm layers** --- so variance computation remains stable.
+3. **Optimizer state** --- so moment estimates don't overflow.
+
+Only the forward and backward pass matrix multiplications use float16 for speed.
+A **loss scaler** inflates the loss before backpropagation to push gradients into
+float16's representable range, then downscales them before the optimizer step.
+
+In PyTorch Lightning, this is enabled via the Trainer:
+
+```python
+trainer = Trainer(precision="16-mixed")
+```
+
+This is fundamentally different from manually setting `dtype=torch.float16` on
+every layer.
+
+## When Low Precision is Appropriate
+
+Low precision (float16, int8, int4) is used for **inference after training**:
+
+| Technique                        | Precision | Use Case                          |
+|----------------------------------|-----------|-----------------------------------|
+| Post-training quantization       | int8/int4 | Deployment, serving LLMs locally  |
+| Weight-only quantization         | int4      | Memory-constrained inference      |
+| Quantization-aware training (QAT)| simulated | Training models robust to quantization |
+
+Inference only performs forward passes with no weight updates, so the precision
+requirements are far less strict than training. A weight of `0.0347` versus its
+float16 approximation barely affects a single forward pass, but the difference
+between `0.0347` and `0.0347 + 1e-6` accumulated over thousands of gradient
+steps is what shapes the trained model.
+
+## Summary
+
+| Step          | Safe Precision        | Why                                        |
+|---------------|-----------------------|--------------------------------------------|
+| Training      | float32 master weights| Gradient updates require high precision     |
+| Forward/backward (mixed) | float16    | Matrix multiplies tolerate lower precision  |
+| BatchNorm     | float32 always        | Variance computation is numerically fragile |
+| Optimizer state | float32             | Moment estimates overflow in float16        |
+| Inference     | float16 / int8 / int4 | No updates, just forward passes             |
+
+**Rule of thumb:** never manually cast model layers to float16 for training. Use
+the framework's mixed-precision API instead, and reserve pure low-precision for
+inference deployment.
