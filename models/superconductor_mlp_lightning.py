@@ -5,10 +5,10 @@ from typing import List, Literal
 import lightning as L
 import torch
 import torch.nn.functional as F
-from torch.export import export
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+from torch.export import export
 
 from data import get_superconductivity_data
 from models import SuperconductorMLP
@@ -26,7 +26,6 @@ class SuperconductorLightning(L.LightningModule):
         ] = "relu",
         batch_norm: bool = True,
         learning_rate: float = 1e-3,
-        model_dtype: torch.dtype = torch.float64,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -34,7 +33,6 @@ class SuperconductorLightning(L.LightningModule):
             neurons=neurons,
             specified_activation=specified_activation,
             batch_norm=batch_norm,
-            model_dtype=model_dtype,
         )
         self.lr = learning_rate
 
@@ -46,13 +44,8 @@ class SuperconductorLightning(L.LightningModule):
         # get the data for the mini-batch
         inputs, target = batch
 
-        # if the input is not of the same dtype as the model,
-        # explicitly cast the input to the model precision
-        if inputs.dtype != self.model.model_dtype:
-            inputs = inputs.to(dtype=self.model.model_dtype)
-
-        # evaluate in model precision
-        model_output = self.model(inputs)
+        # evaluate in input precision
+        model_output = self.model.to(dtype=inputs.dtype)(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -72,13 +65,8 @@ class SuperconductorLightning(L.LightningModule):
         # get the data for the mini-batch
         inputs, target = batch
 
-        # if the input is not of the same dtype as the model,
-        # explicitly cast the input to the model precision
-        if inputs.dtype != self.model.model_dtype:
-            inputs = inputs.to(dtype=self.model.model_dtype)
-
-        # evaluate in model precision
-        model_output = self.model(inputs)
+        # evaluate in input precision
+        model_output = self.model.to(dtype=inputs.dtype)(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -88,16 +76,12 @@ class SuperconductorLightning(L.LightningModule):
         self.log("valid_loss", loss)
 
     def test_step(self, batch: torch.Tensor):
+
         # get the data for the mini-batch
         inputs, target = batch
 
-        # if the input is not of the same dtype as the model,
-        # explicitly cast the input to the model precision
-        if inputs.dtype != self.model.model_dtype:
-            inputs = inputs.to(dtype=self.model.model_dtype)
-
-        # evaluate in model precision
-        model_output = self.model(inputs)
+        # evaluate in input precision
+        model_output = self.model.to(dtype=inputs.dtype)(inputs)
 
         # cast the model output back to the target dtype for loss calculation
         target_dtype = target.dtype
@@ -116,7 +100,6 @@ def construct_mlp(
     specified_activation: Literal["relu", "leaky_relu", "elu", "gelu", "celu"] = "relu",
     batch_norm: bool = True,
     learning_rate: float = 1e-3,
-    model_dtype: torch.dtype = torch.float64,
     max_epochs: int = 1000,
     name: str = "placeholder_name",
     logging_directory: Path = (Path(os.getcwd()) / "models" / "logs"),
@@ -143,7 +126,6 @@ def construct_mlp(
         specified_activation=specified_activation,
         batch_norm=batch_norm,
         learning_rate=learning_rate,
-        model_dtype=model_dtype,
     )
     mlp.compile()
 
@@ -169,11 +151,11 @@ def export_mlp_to_onnx(
     ),
     onnx_path: Path = (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx"),
     model_export_dtype: torch.dtype = torch.float32,
-    **kwargs,
 ):
     model = (
         SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=checkpoint_path, map_location="cpu", **kwargs
+            checkpoint_path=checkpoint_path,
+            map_location="cpu",
         )
         .eval()
         .to(dtype=model_export_dtype)
@@ -189,11 +171,10 @@ def export_mlp_to_pt2(
     ),
     export_path: Path = (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2"),
     model_export_dtype: torch.dtype = torch.float32,
-    **kwargs,
 ):
     model = (
         SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=checkpoint_path, map_location="cpu", **kwargs
+            checkpoint_path=checkpoint_path, map_location="cpu"
         )
         .eval()
         .to(dtype=model_export_dtype)
@@ -205,42 +186,29 @@ def export_mlp_to_pt2(
 
 
 if __name__ == "__main__":
-
     # train the 4 base models and save them both to checkpoint files and ONNX files
     construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
     construct_mlp(
-        name="base_model_FP64", max_epochs=NUMBER_EPOCHS, model_dtype=torch.float64
-    )
-    construct_mlp(
         name="base_model_FP32_no_norm", max_epochs=NUMBER_EPOCHS, batch_norm=False
-    )
-    construct_mlp(
-        name="base_model_FP64_no_norm",
-        max_epochs=NUMBER_EPOCHS,
-        batch_norm=False,
-        model_dtype=torch.float64,
     )
 
     # name, model dtype, and batch_norm
     elements = [
         ("base_model_FP32", torch.float32, True),
-        ("base_model_FP64", torch.float64, True),
         ("base_model_FP32_no_norm", torch.float32, False),
-        ("base_model_FP64_no_norm", torch.float64, False),
     ]
 
     # export to onnx
-    for name, model_dtype, bn in elements:
-
+    for model_name, model_dtype, bn in elements:
         export_mlp_to_onnx(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{name}.ckpt"),
-            onnx_path=(MODEL_PATH / "onnx" / f"{name}.onnx"),
+            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
+            onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
             model_dtype=model_dtype,
             batch_norm=bn,
         )
 
         export_mlp_to_pt2(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{name}.ckpt"),
-            export_path=(MODEL_PATH / "pt2" / f"{name}.pt2"),
+            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
+            export_path=(MODEL_PATH / "pt2" / f"{model_name}.pt2"),
             model_dtype=model_dtype,
         )
