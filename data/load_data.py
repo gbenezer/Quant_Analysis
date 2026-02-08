@@ -12,7 +12,9 @@ from ucimlrepo import fetch_ucirepo
 
 # define Dataset class for Superconductivity data
 class SuperconductivityDataset(data.Dataset):
-    """Dataset subclass for the Superconductivity data that fetches the data from the UCI ML data repository"""
+    """
+    Dataset subclass for the Superconductivity data that fetches the data from the UCI ML data repository
+    """
 
     def __init__(
         self,
@@ -68,20 +70,25 @@ def get_superconductivity_data(
     validation_set: bool = False,
     valid_fraction: float = 0.1,
 ):
-    """_summary_
+    """A factory function to retrieve and construct Datasets and Dataloaders for the superconductivity data
 
     Args:
         test_fraction (float): fraction of total data to use as test data
         random_seed (int): the number for seeding the random number generator
         n_workers (int): how many subprocesses the output dataloaders should use for loading data
         batch_n (int): batch size for the output dataloaders
-        validation_set (bool): whether or not to generate a validation set. Defaults to False.
-        valid_fraction (float): fraction of training data left over to use as validation data.
-            only used if validation_set = True.
+        dtype (torch.dtype, optional): output dataloader dtype. Defaults to torch.float64.
+        validation_set (bool, optional): whether or not to generate a validation set. Defaults to False.
+        valid_fraction (float, optional): fraction of training data to use for validation set. Defaults to 0.1.
 
     Returns:
-        Dataset and DataLoader objects corresponding to training, validation, and testing sets of
-            physicochemical features of superconductors along with associated critical temperatures
+        Tuple[full_set: torch.utils.data.Dataset,
+            train_set: torch.utils.data.Dataset
+            valid_set: torch.utils.data.Dataset | None
+            test_set: torch.utils.data.Dataset
+            train_loader: torch.utils.data.DataLoader,
+            valid_loader: torch.utils.data.DataLoader | None,
+            test_loader: torch.utils.data.DataLoader]: datasets and dataloaders
     """
     # instantiating the full dataset
     full_dataset = SuperconductivityDataset(dtype=dtype)
