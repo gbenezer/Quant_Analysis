@@ -10,8 +10,8 @@ class SuperconductorMLP(nn.Module):
         self,
         neurons: List[int] = [324, 162, 81],
         specified_activation: Literal[
-            'relu', 'leaky_relu', 'elu', 'gelu', 'celu'
-        ] = 'relu',
+            "relu", "leaky_relu", "elu", "gelu", "celu"
+        ] = "relu",
         batch_norm: bool = True,
     ):
         """_summary_

@@ -2,15 +2,15 @@ import os
 from pathlib import Path
 from typing import List, Literal, Optional
 
+import bitsandbytes as bnb
 import lightning as L
 import torch
 import torch.nn.functional as F
-import bitsandbytes as bnb
+from lightning.fabric.plugins.precision.precision import _PRECISION_INPUT
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 from lightning.pytorch.plugins import BitsandbytesPrecision
-from lightning.fabric.plugins.precision.precision import _PRECISION_INPUT
 from torch.export import export
 
 from data import get_superconductivity_data
@@ -169,7 +169,6 @@ def construct_mlp(
     mlp.compile()
 
     if use_bnb:
-
         acceptable_precisions = [
             "nf4",
             "nf4-dq",
@@ -184,7 +183,7 @@ def construct_mlp(
             print(
                 "The acceptable precision settings for BitsAndBytes quantized training:"
             )
-            print(f"{["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]}")
+            print(f"{['nf4', 'nf4-dq', 'fp4', 'fp4-dq', 'int8', 'int8-training']}")
             raise ValueError(f"Precision {precision} not supported by BitsAndBytes.")
 
         bnb_precision = BitsandbytesPrecision(mode=precision)
@@ -198,7 +197,6 @@ def construct_mlp(
             plugins=bnb_precision,
         )
     else:
-
         trainer = Trainer(
             logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
             callbacks=[
