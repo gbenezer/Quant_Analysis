@@ -1,16 +1,13 @@
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List, Literal
 
-import bitsandbytes as bnb
 import lightning as L
 import torch
 import torch.nn.functional as F
-from lightning.fabric.plugins.precision.precision import _PRECISION_INPUT
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
-from lightning.pytorch.plugins import BitsandbytesPrecision
 from torch.export import export
 
 from data import get_superconductivity_data
