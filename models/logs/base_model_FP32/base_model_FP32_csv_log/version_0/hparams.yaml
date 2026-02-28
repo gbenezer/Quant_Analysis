@@ -4,5 +4,4 @@ neurons:
 - 324
 - 162
 - 81
-precision: null
 specified_activation: relu
