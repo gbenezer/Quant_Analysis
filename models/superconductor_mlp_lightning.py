@@ -33,10 +33,6 @@ class SuperconductorLightning(L.LightningModule):
         ] = "relu",
         batch_norm: bool = True,
         learning_rate: float = 1e-3,
-        precision: Optional[
-            Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
-            | _PRECISION_INPUT
-        ] = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -46,7 +42,6 @@ class SuperconductorLightning(L.LightningModule):
             batch_norm=batch_norm,
         )
         self.lr = learning_rate
-        self.precision = precision
 
     def forward(self, x: torch.Tensor):
         """_summary_
@@ -115,17 +110,8 @@ class SuperconductorLightning(L.LightningModule):
 
     def configure_optimizers(
         self,
-        precision: Optional[
-            Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
-            | _PRECISION_INPUT
-        ] = None,
     ):
-        bnb_precisions = ["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
-        if precision in bnb_precisions:
-            optimizer = bnb.optim.Adam8bit(self.parameters(), lr=self.lr)
-        else:
-            optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        return optimizer
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
 
 
 def construct_mlp(
@@ -141,11 +127,6 @@ def construct_mlp(
     seed: int = 42,
     n_workers: int = 4,
     batch_n: int = 64,
-    use_bnb: bool = False,
-    precision: Optional[
-        Literal["nf4", "nf4-dq", "fp4", "fp4-dq", "int8", "int8-training"]
-        | _PRECISION_INPUT
-    ] = None,
 ):
 
     seed_everything(seed)
@@ -164,47 +145,16 @@ def construct_mlp(
         specified_activation=specified_activation,
         batch_norm=batch_norm,
         learning_rate=learning_rate,
-        precision=precision,
     )
     mlp.compile()
 
-    if use_bnb:
-        acceptable_precisions = [
-            "nf4",
-            "nf4-dq",
-            "fp4",
-            "fp4-dq",
-            "int8",
-            "int8-training",
-        ]
-
-        # input validation
-        if precision not in acceptable_precisions:
-            print(
-                "The acceptable precision settings for BitsAndBytes quantized training:"
-            )
-            print(f"{['nf4', 'nf4-dq', 'fp4', 'fp4-dq', 'int8', 'int8-training']}")
-            raise ValueError(f"Precision {precision} not supported by BitsAndBytes.")
-
-        bnb_precision = BitsandbytesPrecision(mode=precision)
-
-        trainer = Trainer(
-            logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
-            callbacks=[
-                ModelCheckpoint(checkpoint_directory, filename=name),
-            ],
-            max_epochs=max_epochs,
-            plugins=bnb_precision,
-        )
-    else:
-        trainer = Trainer(
-            logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
-            callbacks=[
-                ModelCheckpoint(checkpoint_directory, filename=name),
-            ],
-            max_epochs=max_epochs,
-            precision=precision,
-        )
+    trainer = Trainer(
+        logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
+        callbacks=[
+            ModelCheckpoint(checkpoint_directory, filename=name),
+        ],
+        max_epochs=max_epochs,
+    )
 
     trainer.fit(
         model=mlp,
@@ -288,69 +238,3 @@ if __name__ == "__main__":
         export_path=(MODEL_PATH / "pt2" / "base_model_FP32.pt2"),
         model_export_dtype=torch.float32,
     )
-
-    # train the lower precision models and save them to checkpoint files and ONNX files
-    construct_mlp(
-        name="base_model_mixedFP16_train_FP32_storage",
-        max_epochs=NUMBER_EPOCHS,
-        precision="16-mixed",
-    )
-    construct_mlp(
-        name="base_model_mixedBF16_train_FP32_storage",
-        max_epochs=NUMBER_EPOCHS,
-        precision="bf16-mixed",
-    )
-
-    # name and model dtype
-    elements = [
-        ("base_model_mixedFP16_train_FP32_storage", torch.float32),
-        ("base_model_mixedBF16_train_FP32_storage", torch.float32),
-    ]
-
-    # export
-    for model_name, model_dtype in elements:
-        export_mlp_to_onnx(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
-            onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
-            model_export_dtype=model_dtype,
-        )
-
-        export_mlp_to_pt2(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
-            export_path=(MODEL_PATH / "pt2" / f"{model_name}.pt2"),
-            model_export_dtype=model_dtype,
-        )
-
-    # train the lower precision models and save them to checkpoint files and ONNX files
-    construct_mlp(
-        name="base_model_nf4_train_FP32_storage",
-        max_epochs=NUMBER_EPOCHS,
-        use_bnb=True,
-        precision="nf4",
-    )
-    construct_mlp(
-        name="base_model_int8_train_FP32_storage",
-        max_epochs=NUMBER_EPOCHS,
-        use_bnb=True,
-        precision="int8",
-    )
-
-    # name and model dtype
-    elements = [
-        ("base_model_nf4_train_FP32_storage", torch.float32),
-        ("base_model_int8_train_FP32_storage", torch.float32),
-    ]
-
-    # export
-    for model_name, model_dtype in elements:
-        export_mlp_to_onnx(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
-            onnx_path=(MODEL_PATH / "onnx" / f"{model_name}.onnx"),
-            model_export_dtype=model_dtype,
-        )
-
-        export_mlp_to_pt2(
-            checkpoint_path=(MODEL_PATH / "checkpoints" / f"{model_name}.ckpt"),
-            export_path=(MODEL_PATH / "pt2" / f"{model_name}.pt2"),
-            model_export_dtype=model_dtype,
-        )
