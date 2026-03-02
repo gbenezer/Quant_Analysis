@@ -9,7 +9,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 
 from data import get_superconductivity_data
-from src.quant_analysis.evaluation_model_construction import SimpleMLP
+from src.quant_analysis.model_architecture import SimpleMLP
 
 NUMBER_EPOCHS = 25
 
