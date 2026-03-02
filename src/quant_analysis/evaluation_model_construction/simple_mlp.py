@@ -16,17 +16,6 @@ class SimpleMLP(nn.Module):
         ] = "relu",
         batch_norm: bool = True,
     ):
-        """_summary_
-
-        Args:
-            neurons (List[int], optional): _description_. Defaults to [324, 162, 81].
-            specified_activation (Literal[ 'relu', 'leaky_relu', 'elu', 'gelu', 'celu'], optional): _description_. Defaults to 'relu'.
-            batch_norm (bool, optional): _description_. Defaults to True.
-
-        Raises:
-            ValueError: _description_
-            ValueError: _description_
-        """
         super().__init__()
 
         # validate input
