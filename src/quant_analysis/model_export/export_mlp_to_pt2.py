@@ -43,8 +43,9 @@ def export_mlp_to_pt2(
         model = model.to(dtype=model_export_dtype).eval()
 
         input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
-
-        pt2_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        torch.set_grad_enabled(False)
+        model.eval()
 
         pt2_path.parent.mkdir(parents=True, exist_ok=True)
         exported_program = export(model, (input_sample,))
@@ -70,6 +71,9 @@ def export_mlp_to_pt2(
         )
 
         neural_network.load_state_dict(state_dict=state_dict, strict=True)
+        
+        torch.set_grad_enabled(False)
+        neural_network.eval()
 
         input_sample = torch.randn(1, input_dimensions, dtype=model_export_dtype)
 

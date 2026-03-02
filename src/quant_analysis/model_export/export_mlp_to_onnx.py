@@ -44,6 +44,9 @@ def export_mlp_to_onnx(
         input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
 
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        torch.set_grad_enabled(False)
+        model.eval()
 
         torch.onnx.export(
             model,
@@ -79,6 +82,9 @@ def export_mlp_to_onnx(
         input_sample = torch.randn(1, input_dimensions, dtype=model_export_dtype)
 
         onnx_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        torch.set_grad_enabled(False)
+        neural_network.eval()
 
         torch.onnx.export(
             neural_network,
