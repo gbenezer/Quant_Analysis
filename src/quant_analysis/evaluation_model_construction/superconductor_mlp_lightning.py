@@ -7,12 +7,10 @@ import torch.nn.functional as F
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
-from torch.export import export
 
 from data import get_superconductivity_data
 from src.quant_analysis.evaluation_model_construction import SimpleMLP
 
-MODEL_PATH = Path.cwd() / "models"
 NUMBER_EPOCHS = 25
 
 
@@ -163,69 +161,6 @@ def construct_mlp(
     torch.save(mlp.model.state_dict(), (state_dict_directory / f"{name}.pth"))
 
 
-def export_mlp_to_onnx(
-    checkpoint_path: Path = (
-        Path.cwd() / "models" / "checkpoints" / "base_model_FP32.ckpt"
-    ),
-    onnx_path: Path = (Path.cwd() / "models" / "onnx" / "base_model_FP32.onnx"),
-    model_export_dtype: torch.dtype = torch.float32,
-):
-
-    lightning_model = SuperconductorLightning.load_from_checkpoint(
-        checkpoint_path=checkpoint_path, map_location="cpu"
-    ).eval()
-
-    model = lightning_model.model
-    model = model.to(dtype=model_export_dtype).eval()
-    
-    input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
-
-    onnx_path.parent.mkdir(parents=True, exist_ok=True)
-
-    torch.onnx.export(
-        model,
-        (input_sample,),
-        onnx_path,
-        input_names=["input"],
-        output_names=["output"],
-        dynamic_shapes=({0: "batch"},),
-        opset_version=18,
-    )
-
-
-def export_mlp_to_pt2(
-    checkpoint_path: Path = (
-        Path.cwd() / "models" / "checkpoints" / "base_model_FP32.ckpt"
-    ),
-    export_path: Path = (Path.cwd() / "models" / "pt2" / "base_model_FP32.pt2"),
-    model_export_dtype: torch.dtype = torch.float32,
-):
-    model = (
-        SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=checkpoint_path, map_location="cpu"
-        )
-        .eval()
-        .to(dtype=model_export_dtype)
-    )
-    input_sample = torch.rand((1, 81), dtype=model_export_dtype)
-    export_path.parent.mkdir(parents=True, exist_ok=True)
-    exported_program = export(model, (input_sample,))
-    torch.export.save(exported_program, export_path)
-
-
 if __name__ == "__main__":
     # train the base models and save them both to checkpoint files and ONNX files
     construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
-
-    # export
-    export_mlp_to_onnx(
-        checkpoint_path=(MODEL_PATH / "checkpoints" / "base_model_FP32.ckpt"),
-        onnx_path=(MODEL_PATH / "onnx" / "base_model_FP32.onnx"),
-        model_export_dtype=torch.float32,
-    )
-
-    export_mlp_to_pt2(
-        checkpoint_path=(MODEL_PATH / "checkpoints" / "base_model_FP32.ckpt"),
-        export_path=(MODEL_PATH / "pt2" / "base_model_FP32.pt2"),
-        model_export_dtype=torch.float32,
-    )
