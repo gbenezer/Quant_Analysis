@@ -160,7 +160,7 @@ def construct_mlp(
         val_dataloaders=valid_loader,
     )
     trainer.test(model=mlp, dataloaders=test_loader)
-    
+
     torch.save(mlp.model.state_dict(), (state_dict_directory / f"{name}.pth"))
 
 
@@ -190,7 +190,11 @@ def export_mlp_to_onnx(
     )
     input_sample = torch.rand((1, 81), dtype=model_export_dtype)
     onnx_path.parent.mkdir(parents=True, exist_ok=True)
-    model.to_onnx(file_path=onnx_path, input_sample=input_sample)
+    model.to_onnx(
+        file_path=onnx_path,
+        input_sample=input_sample,
+        dynamic_axes={"input": {0: "batch"}, "output": {0: "batch"}},
+    )
 
 
 def export_mlp_to_pt2(
