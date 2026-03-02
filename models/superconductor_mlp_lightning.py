@@ -120,6 +120,7 @@ def construct_mlp(
     name: str = "placeholder_name",
     logging_directory: Path = (Path(os.getcwd()) / "models" / "logs"),
     checkpoint_directory: Path = (Path(os.getcwd()) / "models" / "checkpoints"),
+    state_dict_directory: Path = (Path(os.getcwd()) / "models" / "state_dicts"),
     test_fraction: float = 0.2,
     seed: int = 42,
     n_workers: int = 4,
@@ -159,6 +160,8 @@ def construct_mlp(
         val_dataloaders=valid_loader,
     )
     trainer.test(model=mlp, dataloaders=test_loader)
+    
+    torch.save(mlp.model.state_dict(), (state_dict_directory / f"{name}.pth"))
 
 
 def export_mlp_to_onnx(
