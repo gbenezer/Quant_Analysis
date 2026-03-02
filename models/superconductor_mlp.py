@@ -36,34 +36,25 @@ class SuperconductorMLP(nn.Module):
                 "The activation type selected is not supported by this class"
             )
 
-        # specify that the activation should be a PyTorch Module
-        # for type hinting
-        self.activation: nn.Module
-
         # getting the number of hidden layers
         number_hidden_layers = len(neurons)
+        
+        # creating new activation objects for each layer independently
+        # code adaptation recommended by ChatGPT for downstream compatibility
+        # with ONNX, torch.compile, and torch.fx graph tracing
+        activation_map = {
+            "relu": nn.ReLU,
+            "leaky_relu": nn.LeakyReLU,
+            "elu": nn.ELU,
+            "gelu": nn.GELU,
+            "celu": nn.CELU
+        }
 
-        # construct the network sequence
-        match specified_activation:
-            case "relu":
-                self.activation = nn.ReLU()
-            case "leaky_relu":
-                # uses default negative slope
-                self.activation = nn.LeakyReLU()
-            case "elu":
-                # uses default alpha
-                self.activation = nn.ELU()
-            case "gelu":
-                self.activation = nn.GELU()
-            case "celu":
-                # uses default alpha
-                self.activation = nn.CELU()
-            case _:
-                warn(
-                    message="For some reason, the activation selection code fell through. Defaulting to ReLU.",
-                    category=RuntimeError,
-                )
-                self.activation = nn.ReLU()
+        self.activation_cls = activation_map[specified_activation]
+        
+        if self.activation_cls is None:
+            warn(message=f"Activation type {specified_activation} is not valid. Defaulting to ReLU")
+            self.activation_cls = nn.ReLU
 
         # construct the linear layer sequence adaptively
         self.linear_stack = nn.Sequential(
@@ -81,7 +72,7 @@ class SuperconductorMLP(nn.Module):
                 self.linear_stack.append(norm_layer)
 
             # add the activation layer
-            self.linear_stack.append(self.activation)
+            self.linear_stack.append(self.activation_cls())
 
             # add the linear layer
             current_linear_layer = nn.Linear(
@@ -93,7 +84,7 @@ class SuperconductorMLP(nn.Module):
         # regressing to temperature
         if batch_norm:
             self.linear_stack.append(nn.BatchNorm1d(num_features=neurons[-1]))
-        self.linear_stack.append(self.activation)
+        self.linear_stack.append(self.activation_cls())
         self.linear_stack.append(nn.Linear(in_features=neurons[-1], out_features=1))
 
     def forward(self, x: torch.Tensor):
