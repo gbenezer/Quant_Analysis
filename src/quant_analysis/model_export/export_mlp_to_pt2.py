@@ -6,8 +6,8 @@ import torch
 import torch.nn as nn
 from torch.export import export
 
-from src.quant_analysis.model_architecture import (
-    SimpleMLP, SuperconductorLightning)
+from src.quant_analysis.model_architecture import (SimpleMLP,
+                                                   SuperconductorLightning)
 
 
 def export_mlp_to_pt2(
