@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import List, Literal
 
@@ -13,7 +12,7 @@ from torch.export import export
 from data import get_superconductivity_data
 from models import SimpleMLP
 
-MODEL_PATH = Path(os.getcwd()) / "models"
+MODEL_PATH = Path.cwd() / "models"
 NUMBER_EPOCHS = 25
 
 
@@ -118,9 +117,9 @@ def construct_mlp(
     learning_rate: float = 1e-3,
     max_epochs: int = 1000,
     name: str = "placeholder_name",
-    logging_directory: Path = (Path(os.getcwd()) / "models" / "logs"),
-    checkpoint_directory: Path = (Path(os.getcwd()) / "models" / "checkpoints"),
-    state_dict_directory: Path = (Path(os.getcwd()) / "models" / "state_dicts"),
+    logging_directory: Path = (Path.cwd() / "models" / "logs"),
+    checkpoint_directory: Path = (Path.cwd() / "models" / "checkpoints"),
+    state_dict_directory: Path = (Path.cwd() / "models" / "state_dicts"),
     test_fraction: float = 0.2,
     seed: int = 42,
     n_workers: int = 4,
@@ -166,20 +165,11 @@ def construct_mlp(
 
 def export_mlp_to_onnx(
     checkpoint_path: Path = (
-        Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt"
+        Path.cwd() / "models" / "checkpoints" / "base_model_FP32.ckpt"
     ),
-    onnx_path: Path = (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx"),
+    onnx_path: Path = (Path.cwd() / "models" / "onnx" / "base_model_FP32.onnx"),
     model_export_dtype: torch.dtype = torch.float32,
 ):
-    """_summary_
-
-    Args:
-        checkpoint_path (Path, optional): _description_.
-            Defaults to ( Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt" ).
-        onnx_path (Path, optional): _description_.
-            Defaults to (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx").
-        model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
-    """
 
     lightning_model = SuperconductorLightning.load_from_checkpoint(
         checkpoint_path=checkpoint_path, map_location="cpu"
@@ -198,27 +188,18 @@ def export_mlp_to_onnx(
         onnx_path,
         input_names=["input"],
         output_names=["output"],
-        dynamic_shapes={"input": {0: "batch"}},
-        opset_version=17,
+        dynamic_shapes=({0: "batch"},),
+        opset_version=18,
     )
 
 
 def export_mlp_to_pt2(
     checkpoint_path: Path = (
-        Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt"
+        Path.cwd() / "models" / "checkpoints" / "base_model_FP32.ckpt"
     ),
-    export_path: Path = (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2"),
+    export_path: Path = (Path.cwd() / "models" / "pt2" / "base_model_FP32.pt2"),
     model_export_dtype: torch.dtype = torch.float32,
 ):
-    """_summary_
-
-    Args:
-        checkpoint_path (Path, optional): _description_.
-            Defaults to ( Path(os.getcwd()) / "models" / "checkpoints" / "base_model_FP32.ckpt" ).
-        export_path (Path, optional): _description_.
-            Defaults to (Path(os.getcwd()) / "models" / "pt2" / "base_model_FP32.pt2").
-        model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
-    """
     model = (
         SuperconductorLightning.load_from_checkpoint(
             checkpoint_path=checkpoint_path, map_location="cpu"
