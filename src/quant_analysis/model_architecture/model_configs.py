@@ -20,7 +20,6 @@ class SimpleMLPConfig:
 
 # generic model config saving
 def save_model_config(config, path: Path) -> None:
-
     if not is_dataclass(config):
         raise ValueError("The config must be a valid dataclass")
 
@@ -30,8 +29,11 @@ def save_model_config(config, path: Path) -> None:
         json.dump(asdict(config), f, indent=4)
 
 
-def load_mlp_config(path: Path) -> SimpleMLPConfig:
+def load_model_config(path: Path, config_cls):
     with open(path) as f:
         data = json.load(f)
 
-    return SimpleMLPConfig(**data)
+    if not is_dataclass(config_cls):
+        raise ValueError("config_cls must be a dataclass")
+
+    return config_cls(**data)

@@ -14,12 +14,7 @@ def export_mlp_to_onnx(
     file_type: Literal["state_dict", "checkpoint"],
     onnx_path: Path,
     model_export_dtype: torch.dtype = torch.float32,
-    map_location: Optional[Union[Callable, str, torch.device, Dict]] = "cpu",
-    input_dim: int = 81,
-    output_dim: int = 1,
-    neurons: List[int] = [324, 162, 81],
-    specified_activation: Literal["relu", "leaky_relu", "elu", "gelu", "celu"] = "relu",
-    batch_norm: bool = True,
+    map_location: Optional[Union[Callable, str, torch.device, Dict]] = "cpu"
 ):
 
     suffix_map = {
@@ -54,7 +49,7 @@ def export_mlp_to_onnx(
 
     if file_type == "checkpoint":
         lightning_model = SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=file_path, map_location=map_location
+            checkpoint_path=file_path, map_location=map_location, weights_only=False
         ).eval()
 
         model = lightning_model.model
