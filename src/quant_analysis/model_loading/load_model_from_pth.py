@@ -13,6 +13,7 @@ def load_model_from_pth(
     map_location: Union[Callable, str, torch.device, Dict] = "cpu",
     load_device: Union[str, torch.device] = "cpu",
     train: bool = False,
+    dtype: torch.dtype | None = None
 ) -> nn.Module:
     """_summary_
 
@@ -22,6 +23,7 @@ def load_model_from_pth(
         map_location (Union[Callable, str, torch.device, Dict], optional): _description_. Defaults to "cpu".
         load_device (Union[str, torch.device], optional): _description_. Defaults to "cpu".
         train (bool, optional): _description_. Defaults to False.
+        dtype (torch.dtype, optional): _description_. Defaults to False.
 
     Raises:
         FileNotFoundError: If the given path to the state dictionary is not a file
@@ -39,9 +41,12 @@ def load_model_from_pth(
 
     state_dict = torch.load(f=path, weights_only=True, map_location=map_location)
 
-    neural_network.load_state_dict(state_dict=state_dict)
+    neural_network.load_state_dict(state_dict=state_dict, strict=True)
 
     neural_network.to(device=load_device)
+    
+    if dtype is not None:
+        neural_network.to(dtype=dtype)
 
     if train:
         neural_network.train()
@@ -56,7 +61,7 @@ def load_model_from_pth(
 if __name__ == "__main__":
     import copy
 
-    from models.simple_mlp import SimpleMLP
+    from src.quant_analysis.evaluation_model_construction.simple_mlp import SimpleMLP
 
     model_class_instance = SimpleMLP()
 
