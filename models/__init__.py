@@ -1,4 +1,4 @@
-from .superconductor_mlp import SuperconductorMLP
+from .simple_mlp import SimpleMLP
 from .superconductor_mlp_lightning import SuperconductorLightning
 
-__all__ = ["SuperconductorMLP", "SuperconductorLightning"]
+__all__ = ["SimpleMLP", "SuperconductorLightning"]

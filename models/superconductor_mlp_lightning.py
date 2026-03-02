@@ -11,7 +11,7 @@ from lightning.pytorch.loggers import CSVLogger
 from torch.export import export
 
 from data import get_superconductivity_data
-from models import SuperconductorMLP
+from models import SimpleMLP
 
 MODEL_PATH = Path(os.getcwd()) / "models"
 NUMBER_EPOCHS = 25
@@ -33,7 +33,7 @@ class SuperconductorLightning(L.LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters()
-        self.model = SuperconductorMLP(
+        self.model = SimpleMLP(
             neurons=neurons,
             specified_activation=specified_activation,
             batch_norm=batch_norm,
