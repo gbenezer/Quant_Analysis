@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, Union
 
 import torch
+import torch.nn as nn
 from torch.export import export
 
 from src.quant_analysis.evaluation_model_construction import (
@@ -34,6 +35,16 @@ def export_mlp_to_pt2(
             f"The specified file type {file_type} does not match the path suffix"
         )
 
+    def _export(model: nn.Module, input_dim: int, pt2_path: Path, dtype: torch.dtype):
+        torch.set_grad_enabled(False)
+        model.eval()
+
+        input_sample = torch.randn(1, input_dim, dtype=dtype)
+
+        pt2_path.parent.mkdir(parents=True, exist_ok=True)
+        exported_program = export(model, (input_sample,))
+        torch.export.save(exported_program, pt2_path)
+
     if file_type == "checkpoint":
         lightning_model = SuperconductorLightning.load_from_checkpoint(
             checkpoint_path=file_path, map_location=map_location
@@ -41,15 +52,14 @@ def export_mlp_to_pt2(
 
         model = lightning_model.model
         model = model.to(dtype=model_export_dtype).eval()
+        input_dims = model.input_dim
 
-        input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
-        
-        torch.set_grad_enabled(False)
-        model.eval()
-
-        pt2_path.parent.mkdir(parents=True, exist_ok=True)
-        exported_program = export(model, (input_sample,))
-        torch.export.save(exported_program, pt2_path)
+        _export(
+            model=model,
+            input_dim=input_dims,
+            pt2_path=pt2_path,
+            dtype=model_export_dtype,
+        )
 
     elif file_type == "state_dict":
         neural_network = (
@@ -71,15 +81,13 @@ def export_mlp_to_pt2(
         )
 
         neural_network.load_state_dict(state_dict=state_dict, strict=True)
-        
-        torch.set_grad_enabled(False)
-        neural_network.eval()
 
-        input_sample = torch.randn(1, input_dimensions, dtype=model_export_dtype)
-
-        pt2_path.parent.mkdir(parents=True, exist_ok=True)
-        exported_program = export(neural_network, (input_sample,))
-        torch.export.save(exported_program, pt2_path)
+        _export(
+            model=neural_network,
+            input_dim=input_dimensions,
+            pt2_path=pt2_path,
+            dtype=model_export_dtype,
+        )
 
     else:
         raise ValueError(f"Invalid file type {file_type}")

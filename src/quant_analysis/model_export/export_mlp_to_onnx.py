@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, Union
 
 import torch
+import torch.nn as nn
 
 from src.quant_analysis.evaluation_model_construction import (
     SimpleMLP, SuperconductorLightning)
@@ -33,20 +34,13 @@ def export_mlp_to_onnx(
             f"The specified file type {file_type} does not match the path suffix"
         )
 
-    if file_type == "checkpoint":
-        lightning_model = SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=file_path, map_location=map_location
-        ).eval()
-
-        model = lightning_model.model
-        model = model.to(dtype=model_export_dtype).eval()
-
-        input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
-
-        onnx_path.parent.mkdir(parents=True, exist_ok=True)
-        
+    def _export(model: nn.Module, input_dim: int, onnx_path: Path, dtype: torch.dtype):
         torch.set_grad_enabled(False)
         model.eval()
+
+        input_sample = torch.randn(1, input_dim, dtype=dtype)
+
+        onnx_path.parent.mkdir(parents=True, exist_ok=True)
 
         torch.onnx.export(
             model,
@@ -56,6 +50,21 @@ def export_mlp_to_onnx(
             output_names=["output"],
             dynamic_shapes=({0: "batch"},),
             opset_version=18,
+        )
+
+    if file_type == "checkpoint":
+        lightning_model = SuperconductorLightning.load_from_checkpoint(
+            checkpoint_path=file_path, map_location=map_location
+        ).eval()
+
+        model = lightning_model.model
+        model = model.to(dtype=model_export_dtype).eval()
+
+        _export(
+            model=model,
+            input_dim=model.input_dim,
+            onnx_path=onnx_path,
+            dtype=model_export_dtype,
         )
 
     elif file_type == "state_dict":
@@ -79,21 +88,11 @@ def export_mlp_to_onnx(
 
         neural_network.load_state_dict(state_dict=state_dict, strict=True)
 
-        input_sample = torch.randn(1, input_dimensions, dtype=model_export_dtype)
-
-        onnx_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        torch.set_grad_enabled(False)
-        neural_network.eval()
-
-        torch.onnx.export(
-            neural_network,
-            (input_sample,),
-            onnx_path,
-            input_names=["input"],
-            output_names=["output"],
-            dynamic_shapes=({0: "batch"},),
-            opset_version=18,
+        _export(
+            model=neural_network,
+            input_dim=input_dimensions,
+            onnx_path=onnx_path,
+            dtype=model_export_dtype,
         )
 
     else:
