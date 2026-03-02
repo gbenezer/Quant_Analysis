@@ -59,6 +59,10 @@ class SimpleMLP(nn.Module):
                 message=f"Activation type {specified_activation} is not valid. Defaulting to ReLU"
             )
             self.activation_cls = nn.ReLU
+            
+        # save the input and output dimensionality for later reference
+        self.input_dim = input_dim
+        self.output_dim = output_dim
 
         # construct the linear layer sequence adaptively
         self.linear_stack = nn.Sequential(
