@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from pathlib import Path
 from typing import List, Literal
 
@@ -9,7 +10,9 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
 
 from data import get_superconductivity_data
-from src.quant_analysis.model_architecture import SimpleMLP
+from src.quant_analysis.model_architecture.model_configs import (
+    SimpleMLPConfig, save_model_config)
+from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 NUMBER_EPOCHS = 25
 
@@ -21,20 +24,13 @@ class SuperconductorLightning(L.LightningModule):
 
     def __init__(
         self,
-        neurons: List[int] = [324, 162, 81],
-        specified_activation: Literal[
-            "relu", "leaky_relu", "elu", "gelu", "celu"
-        ] = "relu",
-        batch_norm: bool = True,
+        config: SimpleMLPConfig,
         learning_rate: float = 1e-3,
     ):
         super().__init__()
         self.save_hyperparameters()
-        self.model = SimpleMLP(
-            neurons=neurons,
-            specified_activation=specified_activation,
-            batch_norm=batch_norm,
-        )
+        self.config = config
+        self.model = SimpleMLP(config=config)
         self.lr = learning_rate
 
     def forward(self, x: torch.Tensor):
@@ -109,14 +105,13 @@ class SuperconductorLightning(L.LightningModule):
 
 
 def construct_mlp(
-    neurons: List[int] = [324, 162, 81],
-    specified_activation: Literal["relu", "leaky_relu", "elu", "gelu", "celu"] = "relu",
-    batch_norm: bool = True,
+    config: SimpleMLPConfig,
     learning_rate: float = 1e-3,
     max_epochs: int = 1000,
     name: str = "placeholder_name",
     logging_directory: Path = (Path.cwd() / "models" / "logs"),
     checkpoint_directory: Path = (Path.cwd() / "models" / "checkpoints"),
+    config_directory: Path = (Path.cwd() / "models" / "configs"),
     state_dict_directory: Path = (Path.cwd() / "models" / "state_dicts"),
     test_fraction: float = 0.2,
     seed: int = 42,
@@ -135,12 +130,7 @@ def construct_mlp(
         validation_set=True,
     )
 
-    mlp = SuperconductorLightning(
-        neurons=neurons,
-        specified_activation=specified_activation,
-        batch_norm=batch_norm,
-        learning_rate=learning_rate,
-    )
+    mlp = SuperconductorLightning(config=config, learning_rate=learning_rate)
     mlp.compile()
 
     trainer = Trainer(
@@ -157,10 +147,24 @@ def construct_mlp(
         val_dataloaders=valid_loader,
     )
     trainer.test(model=mlp, dataloaders=test_loader)
+    config_dict = asdict(mlp.config)
+    state_dict = mlp.model.state_dict()
 
-    torch.save(mlp.model.state_dict(), (state_dict_directory / f"{name}.pth"))
+    torch.save(
+        {"config": config_dict, "state_dict": state_dict},
+        (state_dict_directory / f"{name}.pth"),
+    )
+
+    save_model_config(config=mlp.config, path=(config_directory / f"{name}.json"))
 
 
 if __name__ == "__main__":
     # train the base models and save them both to checkpoint files and ONNX files
-    construct_mlp(name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
+    base_config = SimpleMLPConfig(
+        input_dim=81,
+        output_dim=1,
+        neurons_per_layer=[324, 162, 81],
+        activation="relu",
+        use_batch_norm=True,
+    )
+    construct_mlp(config=base_config, name="base_model_FP32", max_epochs=NUMBER_EPOCHS)

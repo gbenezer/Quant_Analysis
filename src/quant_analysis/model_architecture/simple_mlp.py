@@ -1,34 +1,31 @@
-from typing import List, Literal
 from warnings import warn
 
 import torch
 import torch.nn as nn
 
+from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
+
 
 class SimpleMLP(nn.Module):
     def __init__(
         self,
-        input_dim=81,
-        output_dim=1,
-        neurons: List[int] = [324, 162, 81],
-        specified_activation: Literal[
-            "relu", "leaky_relu", "elu", "gelu", "celu"
-        ] = "relu",
-        batch_norm: bool = True,
+        config: SimpleMLPConfig,
     ):
         super().__init__()
 
+        self.config = config
+
         # validate input
-        if len(neurons) <= 0:
+        if len(self.config.neurons_per_layer) <= 0:
             raise ValueError("The number of layer widths has to be positive")
 
-        if specified_activation not in ["relu", "leaky_relu", "elu", "gelu", "celu"]:
+        if self.config.activation not in ["relu", "leaky_relu", "elu", "gelu", "celu"]:
             raise ValueError(
                 "The activation type selected is not supported by this class"
             )
 
         # getting the number of hidden layers
-        number_hidden_layers = len(neurons)
+        number_hidden_layers = len(self.config.neurons_per_layer)
 
         # creating new activation objects for each layer independently
         # code adaptation recommended by ChatGPT for downstream compatibility
@@ -41,30 +38,29 @@ class SimpleMLP(nn.Module):
             "celu": nn.CELU,
         }
 
-        self.activation_cls = activation_map[specified_activation]
+        self.activation_cls = activation_map[self.config.activation]
 
         if self.activation_cls is None:
             warn(
-                message=f"Activation type {specified_activation} is not valid. Defaulting to ReLU"
+                message=f"Activation type {self.config.activation} is not valid. Defaulting to ReLU"
             )
             self.activation_cls = nn.ReLU
 
-        # save the input and output dimensionality for later reference
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-
         # construct the linear layer sequence adaptively
         self.linear_stack = nn.Sequential(
-            nn.Linear(in_features=input_dim, out_features=neurons[0])
+            nn.Linear(
+                in_features=self.config.input_dim,
+                out_features=self.config.neurons_per_layer[0],
+            )
         )
 
         for layer in range(1, number_hidden_layers):
             # get the input and output number of features using the width list
-            layer_input_features = neurons[(layer - 1)]
-            layer_output_features = neurons[layer]
+            layer_input_features = self.config.neurons_per_layer[(layer - 1)]
+            layer_output_features = self.config.neurons_per_layer[layer]
 
             # if batch norm is specified, add a 1D batch normalization layer
-            if batch_norm:
+            if self.config.use_batch_norm:
                 norm_layer = nn.BatchNorm1d(num_features=layer_input_features)
                 self.linear_stack.append(norm_layer)
 
@@ -79,11 +75,16 @@ class SimpleMLP(nn.Module):
 
         # add the last layers
         # regressing to temperature
-        if batch_norm:
-            self.linear_stack.append(nn.BatchNorm1d(num_features=neurons[-1]))
+        if self.config.use_batch_norm:
+            self.linear_stack.append(
+                nn.BatchNorm1d(num_features=self.config.neurons_per_layer[-1])
+            )
         self.linear_stack.append(self.activation_cls())
         self.linear_stack.append(
-            nn.Linear(in_features=neurons[-1], out_features=output_dim)
+            nn.Linear(
+                in_features=self.config.neurons_per_layer[-1],
+                out_features=self.config.output_dim,
+            )
         )
 
     def forward(self, x: torch.Tensor):
@@ -100,11 +101,43 @@ class SimpleMLP(nn.Module):
 
 # small output smoke test to evaluate factory functionality
 if __name__ == "__main__":
-    test_model = SimpleMLP()
+    config_1 = SimpleMLPConfig(
+        input_dim=81,
+        output_dim=1,
+        neurons_per_layer=[324, 162, 81],
+        activation="relu",
+        use_batch_norm=True,
+    )
+
+    config_2 = SimpleMLPConfig(
+        input_dim=81,
+        output_dim=1,
+        neurons_per_layer=[324, 162, 81],
+        activation="relu",
+        use_batch_norm=False,
+    )
+
+    config_3 = SimpleMLPConfig(
+        input_dim=81,
+        output_dim=1,
+        neurons_per_layer=[324, 162, 81],
+        activation="gelu",
+        use_batch_norm=True,
+    )
+
+    config_4 = SimpleMLPConfig(
+        input_dim=81,
+        output_dim=1,
+        neurons_per_layer=[1000, 500, 250, 100],
+        activation="relu",
+        use_batch_norm=True,
+    )
+
+    test_model = SimpleMLP(config_1)
     print(test_model)
-    test_model = SimpleMLP(batch_norm=False)
+    test_model = SimpleMLP(config_2)
     print(test_model)
-    test_model = SimpleMLP(specified_activation="gelu")
+    test_model = SimpleMLP(config_3)
     print(test_model)
-    test_model = SimpleMLP(neurons=[1000, 500, 250, 100])
+    test_model = SimpleMLP(config_4)
     print(test_model)
