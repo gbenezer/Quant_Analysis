@@ -180,20 +180,26 @@ def export_mlp_to_onnx(
             Defaults to (Path(os.getcwd()) / "models" / "onnx" / "base_model_FP32.onnx").
         model_export_dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
     """
-    model = (
-        SuperconductorLightning.load_from_checkpoint(
-            checkpoint_path=checkpoint_path,
-            map_location="cpu",
-        )
-        .eval()
-        .to(dtype=model_export_dtype)
-    )
-    input_sample = torch.rand((1, 81), dtype=model_export_dtype)
+
+    lightning_model = SuperconductorLightning.load_from_checkpoint(
+        checkpoint_path=checkpoint_path, map_location="cpu"
+    ).eval()
+
+    model = lightning_model.model
+    model = model.to(dtype=model_export_dtype).eval()
+    
+    input_sample = torch.randn(1, model.input_dim, dtype=model_export_dtype)
+
     onnx_path.parent.mkdir(parents=True, exist_ok=True)
-    model.to_onnx(
-        file_path=onnx_path,
-        input_sample=input_sample,
-        dynamic_axes={"input": {0: "batch"}, "output": {0: "batch"}},
+
+    torch.onnx.export(
+        model,
+        (input_sample,),
+        onnx_path,
+        input_names=["input"],
+        output_names=["output"],
+        dynamic_shapes={"input": {0: "batch"}},
+        opset_version=17,
     )
 
 
