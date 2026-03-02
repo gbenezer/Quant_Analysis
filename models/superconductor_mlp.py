@@ -38,7 +38,7 @@ class SuperconductorMLP(nn.Module):
 
         # getting the number of hidden layers
         number_hidden_layers = len(neurons)
-        
+
         # creating new activation objects for each layer independently
         # code adaptation recommended by ChatGPT for downstream compatibility
         # with ONNX, torch.compile, and torch.fx graph tracing
@@ -47,13 +47,15 @@ class SuperconductorMLP(nn.Module):
             "leaky_relu": nn.LeakyReLU,
             "elu": nn.ELU,
             "gelu": nn.GELU,
-            "celu": nn.CELU
+            "celu": nn.CELU,
         }
 
         self.activation_cls = activation_map[specified_activation]
-        
+
         if self.activation_cls is None:
-            warn(message=f"Activation type {specified_activation} is not valid. Defaulting to ReLU")
+            warn(
+                message=f"Activation type {specified_activation} is not valid. Defaulting to ReLU"
+            )
             self.activation_cls = nn.ReLU
 
         # construct the linear layer sequence adaptively
