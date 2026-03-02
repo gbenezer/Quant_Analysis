@@ -61,7 +61,7 @@ def load_model_from_pth(
 if __name__ == "__main__":
     import copy
 
-    from src.quant_analysis.evaluation_model_construction.simple_mlp import \
+    from src.quant_analysis.model_architecture.simple_mlp import \
         SimpleMLP
 
     model_class_instance = SimpleMLP()

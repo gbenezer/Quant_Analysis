@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.export import export
 
-from src.quant_analysis.evaluation_model_construction import (
+from src.quant_analysis.model_architecture import (
     SimpleMLP, SuperconductorLightning)
 
 
