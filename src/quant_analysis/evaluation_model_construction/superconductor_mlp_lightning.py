@@ -10,7 +10,7 @@ from lightning.pytorch.loggers import CSVLogger
 from torch.export import export
 
 from data import get_superconductivity_data
-from models import SimpleMLP
+from src.quant_analysis.evaluation_model_construction import SimpleMLP
 
 MODEL_PATH = Path.cwd() / "models"
 NUMBER_EPOCHS = 25
