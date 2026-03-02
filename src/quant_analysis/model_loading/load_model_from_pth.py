@@ -1,7 +1,8 @@
 # function to load a PyTorch model from a state_dict
 
 from pathlib import Path
-from typing import Union, Callable, Dict
+from typing import Callable, Dict, Union
+
 import torch
 import torch.nn as nn
 
@@ -16,7 +17,7 @@ def load_model_from_pth(
     """_summary_
 
     Args:
-        state_dict_pth_path (Union[str, Path]): The 
+        state_dict_pth_path (Union[str, Path]): The
         neural_network (nn.Module): the initialized model class to load the state dictionary parameters into
         map_location (Union[Callable, str, torch.device, Dict], optional): _description_. Defaults to "cpu".
         load_device (Union[str, torch.device], optional): _description_. Defaults to "cpu".
@@ -32,13 +33,11 @@ def load_model_from_pth(
         path = Path(state_dict_pth_path)
     else:
         path = state_dict_pth_path
-        
+
     if not path.is_file():
         raise FileNotFoundError(f"State dict not found: {path}")
 
-    state_dict = torch.load(
-        f=path, weights_only=True, map_location=map_location
-    )
+    state_dict = torch.load(f=path, weights_only=True, map_location=map_location)
 
     neural_network.load_state_dict(state_dict=state_dict)
 
@@ -55,13 +54,14 @@ def load_model_from_pth(
 
 # smoke test with given directory structure
 if __name__ == "__main__":
-    from models.superconductor_mlp import SuperconductorMLP
     import copy
+
+    from models.superconductor_mlp import SuperconductorMLP
 
     model_class_instance = SuperconductorMLP()
 
     print("Initial Random State Dictionary")
-    
+
     for param_tensor in model_class_instance.state_dict():
         print(f"Parameter Tensor: {param_tensor}")
         print(f"Value:\n{model_class_instance.state_dict()[param_tensor]}")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     )
 
     print("Trained State Dictionary")
-    
+
     for param_tensor in model.state_dict():
         print(f"Parameter Tensor: {param_tensor}")
         print(f"Value:\n{model.state_dict()[param_tensor]}")
