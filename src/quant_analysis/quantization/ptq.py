@@ -54,7 +54,7 @@ config_property_mapping = {
         "weight_only": "yes",
     },
     "Int4WeightOnlyConfig": {
-        "precision": "int8",
+        "precision": "int4",
         "calibration": "static",
         "weight_only": "yes",
     },
