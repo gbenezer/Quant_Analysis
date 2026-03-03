@@ -140,27 +140,19 @@ def run_ptq(
 
     baseline_MAE = evaluate_mae(model=base_model, dataloader=dataloader)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        model_path = Path(tmpdir) / "baseline_quantized_model.pth"
+    input_dim = next(iter(dataloader))[0].shape[1]
 
-        state_dict = base_model.state_dict()
-
-        torch.save(
-            state_dict,
-            model_path,
-        )
-
-        (
-            baseline_model_size,
-            baseline_median_latency,
-            baseline_p95_latency,
-            baseline_p99_latency,
-        ) = evaluate_onnx_latency_and_size(
-            model_path=model_path,
-            file_type="state_dict",
-            latency_measurements=latency_measurements,
-            warmup_inferences=warmup_inferences,
-        )
+    (
+        baseline_model_size,
+        baseline_median_latency,
+        baseline_p95_latency,
+        baseline_p99_latency,
+    ) = evaluate_onnx_latency_and_size(
+        base_model,
+        input_dim=input_dim,
+        latency_measurements=latency_measurements,
+        warmup_inferences=warmup_inferences,
+    )
 
     for quantized_model, config_name in model_config_name_list:
         metric_dict = {}
@@ -172,40 +164,30 @@ def run_ptq(
         metric_dict["relative_MAE"] = metric_dict["quantized_MAE"] / baseline_MAE
 
         # evaluate model size and latency
-        with tempfile.TemporaryDirectory() as tmpdir:
-            model_path = Path(tmpdir) / "current_quantized_model.pth"
+        (
+            metric_dict["quantized_model_size"],
+            metric_dict["quantized_median_latency"],
+            metric_dict["quantized_p95_latency"],
+            metric_dict["quantized_p99_latency"],
+        ) = evaluate_onnx_latency_and_size(
+            quantized_model,
+            input_dim,
+            latency_measurements=latency_measurements,
+            warmup_inferences=warmup_inferences,
+        )
 
-            state_dict = quantized_model.state_dict()
-
-            torch.save(
-                state_dict,
-                model_path,
-            )
-
-            (
-                metric_dict["quantized_model_size"],
-                metric_dict["quantized_median_latency"],
-                metric_dict["quantized_p95_latency"],
-                metric_dict["quantized_p99_latency"],
-            ) = evaluate_onnx_latency_and_size(
-                model_path=model_path,
-                file_type="state_dict",
-                latency_measurements=latency_measurements,
-                warmup_inferences=warmup_inferences,
-            )
-
-            metric_dict["relative_model_size"] = (
-                metric_dict["quantized_model_size"] / baseline_model_size
-            )
-            metric_dict["relative_median_latency"] = (
-                metric_dict["quantized_median_latency"] / baseline_median_latency
-            )
-            metric_dict["relative_p95_latency"] = (
-                metric_dict["quantized_p95_latency"] / baseline_p95_latency
-            )
-            metric_dict["relative_p99_latency"] = (
-                metric_dict["quantized_p99_latency"] / baseline_p99_latency
-            )
+        metric_dict["relative_model_size"] = (
+            metric_dict["quantized_model_size"] / baseline_model_size
+        )
+        metric_dict["relative_median_latency"] = (
+            metric_dict["quantized_median_latency"] / baseline_median_latency
+        )
+        metric_dict["relative_p95_latency"] = (
+            metric_dict["quantized_p95_latency"] / baseline_p95_latency
+        )
+        metric_dict["relative_p99_latency"] = (
+            metric_dict["quantized_p99_latency"] / baseline_p99_latency
+        )
 
         output_dict[config_name].update(metric_dict)
 
