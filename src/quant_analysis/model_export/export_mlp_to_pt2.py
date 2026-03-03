@@ -6,13 +6,10 @@ import torch
 import torch.nn as nn
 from torch.export import export
 
-from src.quant_analysis.model_architecture import (
-    SimpleMLP,
-    SimpleMLPConfig,
-    SuperconductorLightning,
-)
-
-from src.quant_analysis.model_loading.load_mlp_from_pth import load_mlp_from_pth
+from src.quant_analysis.model_architecture import (SimpleMLP, SimpleMLPConfig,
+                                                   SuperconductorLightning)
+from src.quant_analysis.model_loading.load_mlp_from_pth import \
+    load_mlp_from_pth
 
 
 def export_mlp_to_pt2(
@@ -62,7 +59,6 @@ def export_mlp_to_pt2(
         )
 
     elif file_type == "state_dict":
-
         neural_network = load_mlp_from_pth(path=file_path)
 
         input_dimensions = neural_network.config.input_dim

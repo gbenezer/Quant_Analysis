@@ -1,6 +1,7 @@
 # function to load a PyTorch model from a state_dict
-import torch
 from pathlib import Path
+
+import torch
 
 from src.quant_analysis.model_architecture import SimpleMLP, SimpleMLPConfig
 
@@ -20,7 +21,6 @@ def load_mlp_from_pth(path: Path, device="cpu") -> SimpleMLP:
 
 # smoke test with given directory structure
 if __name__ == "__main__":
-
     test_model = load_mlp_from_pth(
         path=(Path.cwd() / "models" / "state_dicts" / "base_model_FP32.pth")
     )
