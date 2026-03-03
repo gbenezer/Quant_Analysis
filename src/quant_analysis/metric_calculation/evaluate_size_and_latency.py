@@ -6,7 +6,8 @@ from typing import Literal
 import numpy as np
 import onnxruntime as ort
 
-from src.quant_analysis.model_export.export_mlp_to_onnx import export_mlp_to_onnx
+from src.quant_analysis.model_export.export_mlp_to_onnx import \
+    export_mlp_to_onnx
 
 
 def measure_latency(
