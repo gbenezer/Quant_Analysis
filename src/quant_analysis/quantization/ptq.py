@@ -6,15 +6,21 @@ from typing import Any, Optional
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchao.quantization import (Float8DynamicActivationFloat8WeightConfig,
-                                  Float8StaticActivationFloat8WeightConfig,
-                                  Float8WeightOnlyConfig, Int4WeightOnlyConfig,
-                                  Int8DynamicActivationInt8WeightConfig,
-                                  Int8StaticActivationInt8WeightConfig,
-                                  Int8WeightOnlyConfig, quantize_)
+from torchao.quantization import (
+    Float8DynamicActivationFloat8WeightConfig,
+    Float8StaticActivationFloat8WeightConfig,
+    Float8WeightOnlyConfig,
+    Int4WeightOnlyConfig,
+    Int8DynamicActivationInt8WeightConfig,
+    Int8StaticActivationInt8WeightConfig,
+    Int8WeightOnlyConfig,
+    quantize_,
+)
 
 from src.quant_analysis.metric_calculation import (
-    evaluate_mae, evaluate_onnx_latency_and_size)
+    evaluate_mae,
+    evaluate_onnx_latency_and_size,
+)
 
 config_property_mapping = {
     "Float8DynamicActivationFloat8WeightConfig": {
@@ -24,7 +30,7 @@ config_property_mapping = {
     },
     "Float8StaticActivationFloat8WeightConfig": {
         "precision": "float8",
-        "calibration": "dynamic",
+        "calibration": "static",
         "weight_only": "no",
     },
     "Int8DynamicActivationInt8WeightConfig": {
@@ -144,13 +150,16 @@ def run_ptq(
             model_path,
         )
 
-        baseline_model_size, baseline_median_latency, baseline_p99_latency = (
-            evaluate_onnx_latency_and_size(
-                model_path=model_path,
-                file_type="state_dict",
-                latency_measurements=latency_measurements,
-                warmup_inferences=warmup_inferences,
-            )
+        (
+            baseline_model_size,
+            baseline_median_latency,
+            baseline_p95_latency,
+            baseline_p99_latency,
+        ) = evaluate_onnx_latency_and_size(
+            model_path=model_path,
+            file_type="state_dict",
+            latency_measurements=latency_measurements,
+            warmup_inferences=warmup_inferences,
         )
 
     for quantized_model, config_name in model_config_name_list:
@@ -176,6 +185,7 @@ def run_ptq(
             (
                 metric_dict["quantized_model_size"],
                 metric_dict["quantized_median_latency"],
+                metric_dict["quantized_p95_latency"],
                 metric_dict["quantized_p99_latency"],
             ) = evaluate_onnx_latency_and_size(
                 model_path=model_path,
@@ -189,6 +199,9 @@ def run_ptq(
             )
             metric_dict["relative_median_latency"] = (
                 metric_dict["quantized_median_latency"] / baseline_median_latency
+            )
+            metric_dict["relative_p95_latency"] = (
+                metric_dict["quantized_p95_latency"] / baseline_p95_latency
             )
             metric_dict["relative_p99_latency"] = (
                 metric_dict["quantized_p99_latency"] / baseline_p99_latency
