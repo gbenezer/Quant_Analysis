@@ -38,7 +38,6 @@ def measure_latency(
 
 def evaluate_onnx_latency_and_size(
     model: nn.Module,
-    model_export_dtype: torch.dtype = torch.float32,
     input_dim: int = 81,
     latency_measurements: int = 500,
     warmup_inferences: int = 50,
@@ -46,7 +45,7 @@ def evaluate_onnx_latency_and_size(
 
     model.eval()
 
-    input_sample = torch.randn((1, input_dim), dtype=model_export_dtype)
+    input_sample = torch.randn((1, input_dim), dtype=torch.float32)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         onnx_path = Path(tmpdir) / "temp_model.onnx"
