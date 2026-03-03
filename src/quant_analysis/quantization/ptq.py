@@ -6,21 +6,15 @@ from typing import Any, Optional
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchao.quantization import (
-    Float8DynamicActivationFloat8WeightConfig,
-    Float8StaticActivationFloat8WeightConfig,
-    Float8WeightOnlyConfig,
-    Int4WeightOnlyConfig,
-    Int8DynamicActivationInt8WeightConfig,
-    Int8StaticActivationInt8WeightConfig,
-    Int8WeightOnlyConfig,
-    quantize_,
-)
+from torchao.quantization import (Float8DynamicActivationFloat8WeightConfig,
+                                  Float8StaticActivationFloat8WeightConfig,
+                                  Float8WeightOnlyConfig, Int4WeightOnlyConfig,
+                                  Int8DynamicActivationInt8WeightConfig,
+                                  Int8StaticActivationInt8WeightConfig,
+                                  Int8WeightOnlyConfig, quantize_)
 
 from src.quant_analysis.metric_calculation import (
-    evaluate_mae,
-    evaluate_onnx_latency_and_size,
-)
+    evaluate_mae, evaluate_onnx_latency_and_size)
 
 config_property_mapping = {
     "Float8DynamicActivationFloat8WeightConfig": {
