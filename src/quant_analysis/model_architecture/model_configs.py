@@ -5,7 +5,6 @@ from pathlib import Path
 
 # dataclass definition section
 
-
 @dataclass
 class SimpleMLPConfig:
     input_dim: int
@@ -16,7 +15,6 @@ class SimpleMLPConfig:
 
 
 # helper function section
-
 
 # generic model config saving
 def save_model_config(config, path: Path) -> None:

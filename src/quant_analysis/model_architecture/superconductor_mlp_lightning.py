@@ -16,7 +16,6 @@ from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 NUMBER_EPOCHS = 25
 
-
 class SuperconductorLightning(L.LightningModule):
     """
     _summary_
