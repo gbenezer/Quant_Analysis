@@ -109,7 +109,11 @@ def run_ptq(
     batch_size: int = 128,
     latency_measurements: int = 500,
     warmup_inferences: int = 50,
+    print_debug: bool = False,
 ):
+
+    if print_debug:
+        print("constructing models")
 
     # construct and quantize the models
     model_dynamic_f8a_f8w = quantize_ptq(
@@ -146,7 +150,13 @@ def run_ptq(
     # get the attributes of each config as a new dictionary
     output_dict = {}
 
+    if print_debug:
+        print("evaluating baseline MAE")
+
     baseline_MAE = evaluate_mae(model=base_model, dataloader=dataloader)
+
+    if print_debug:
+        print(f"Baseline MAE: {baseline_MAE}")
 
     input_dim = next(iter(dataloader))[0].shape[1]
     sample_input = torch.randn(
@@ -155,6 +165,10 @@ def run_ptq(
         device=evaluation_device,
         dtype=next(base_model.parameters()).dtype,
     )
+
+    if print_debug:
+        print(f"sample input shape: {sample_input.shape}")
+        print("evaluating baseline latency and model size")
 
     (
         baseline_model_size,
@@ -169,6 +183,9 @@ def run_ptq(
         device=evaluation_device,
     )
 
+    if print_debug:
+        print(f"starting model quantization")
+
     for quantized_model, config_name in model_config_name_list:
         print(f"Current config: {config_name}")
 
@@ -178,6 +195,9 @@ def run_ptq(
         metric_dict = {}
 
         # evaluate model error
+        if print_debug:
+            print(f"evaluating {config_name} MAE")
+
         metric_dict["quantized_MAE"] = evaluate_mae(
             model=quantized_model, dataloader=dataloader
         )
@@ -185,6 +205,8 @@ def run_ptq(
 
         # evaluate model size and latency
         try:
+            if print_debug:
+                print(f"evaluating size and latency for {config_name}")
             (
                 metric_dict["quantized_model_size"],
                 metric_dict["quantized_median_latency"],
@@ -227,10 +249,12 @@ if __name__ == "__main__":
     from data.load_data import get_superconductivity_data
     from src.quant_analysis.model_loading import load_mlp_from_pth
 
+    print("loading model")
     test_model = load_mlp_from_pth(
         path=(Path.cwd() / "models" / "state_dicts" / "base_model_FP32.pth")
     ).to(device=device)
 
+    print("getting data")
     (
         _,
         _,
@@ -243,7 +267,10 @@ if __name__ == "__main__":
         test_fraction=0.2, random_seed=12, n_workers=4, batch_n=32
     )
 
-    train_loader_output = run_ptq(test_model, train_loader, evaluation_device=device)
+    print("running ptq")
+    train_loader_output = run_ptq(
+        test_model, train_loader, evaluation_device=device, print_debug=True
+    )
 
     # test_loader_output = run_ptq(test_model, test_loader, device=device)
 
