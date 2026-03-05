@@ -11,7 +11,7 @@ def evaluate_mae(model: nn.Module, dataloader: DataLoader):
     absolute_error = 0.0
     loss_function = nn.L1Loss(reduction="sum")
 
-    with torch.no_grad():
+    with torch.inference_mode():
         for X, y in dataloader:
             X = X.to(device)
             y = y.to(device)
