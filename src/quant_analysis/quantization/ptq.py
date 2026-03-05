@@ -58,6 +58,7 @@ config_property_mapping = {
     },
 }
 
+
 def supports_step(config_cls):
     return "step" in inspect.signature(config_cls).parameters
 

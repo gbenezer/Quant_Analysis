@@ -11,10 +11,13 @@ from lightning.pytorch.loggers import CSVLogger
 
 from data import get_superconductivity_data
 from src.quant_analysis.model_architecture.model_configs import (
-    SimpleMLPConfig, save_model_config)
+    SimpleMLPConfig,
+    save_model_config,
+)
 from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 NUMBER_EPOCHS = 25
+
 
 class SuperconductorLightning(L.LightningModule):
     """

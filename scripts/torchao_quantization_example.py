@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import torch
+
 # also try using the legacy torch facilities for static quantization
 import torch.ao.quantization as tq
 import torchao

@@ -10,6 +10,7 @@ import onnxruntime as ort
 import torch
 import torch.nn as nn
 
+
 def measure_latency_onnx(
     session: ort.InferenceSession,
     input_name: str,
@@ -160,7 +161,9 @@ def evaluate_pytorch_latency_and_size(
 
     model.eval()
 
-    model_size = sum(p.numel() * p.element_size() for p in model.parameters())
+    buffer = io.BytesIO()
+    torch.save(model.state_dict(), buffer)
+    model_size = buffer.getbuffer().nbytes
 
     device = torch.device(device)
 

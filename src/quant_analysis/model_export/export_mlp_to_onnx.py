@@ -5,10 +5,12 @@ from typing import Callable, Dict, List, Literal, Optional, Union
 import torch
 import torch.nn as nn
 
-from src.quant_analysis.model_architecture import (SimpleMLP, SimpleMLPConfig,
-                                                   SuperconductorLightning)
-from src.quant_analysis.model_loading.load_mlp_from_pth import \
-    load_mlp_from_pth
+from src.quant_analysis.model_architecture import (
+    SimpleMLP,
+    SimpleMLPConfig,
+    SuperconductorLightning,
+)
+from src.quant_analysis.model_loading.load_mlp_from_pth import load_mlp_from_pth
 
 
 def export_mlp_to_onnx(
