@@ -555,6 +555,19 @@ wheels = [
 ]
 
 [[package]]
+name = "mslk-cuda"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5d/8f/559e5b9857f6fe6bca0373fada848d12c715e5f7b303b7adad04ce3c2e3e/mslk_cuda-1.0.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:d9bfe20b1ee1046a6fdf0561ac53bd4f0c4f8a5cba89d50c73d649df53230f72", size = 50264573, upload-time = "2026-01-23T03:27:33.543Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/60/807b03264f20e7ba6cdcb0e3c0612cb45bcf70ef7681c5dca29c16526bf6/mslk_cuda-1.0.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:81e4889efb48e78b60cfb6d2558e8a67013b89c7079cb7a224a2465074f00df9", size = 50264618, upload-time = "2026-01-23T03:27:42.272Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/5a/2b75b294c5ffedf6686f70f475ae52e734202130390da18535e081aa5d58/mslk_cuda-1.0.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:0c198e82e3fb9118b6337b151964804d7345da429f1bb6889bf10cf738e81af5", size = 50264535, upload-time = "2026-01-23T03:27:57.261Z" },
+]
+
+[[package]]
 name = "multidict"
 version = "6.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1279,6 +1292,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "lightning" },
+    { name = "mslk-cuda" },
     { name = "onnx" },
     { name = "onnxruntime" },
     { name = "onnxruntime-gpu" },
@@ -1303,6 +1317,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "lightning", specifier = ">=2.6.1" },
+    { name = "mslk-cuda", specifier = ">=1.0.0" },
     { name = "onnx", specifier = ">=1.20.1" },
     { name = "onnxruntime", specifier = ">=1.24.1" },
     { name = "onnxruntime-gpu", specifier = ">=1.24.1" },

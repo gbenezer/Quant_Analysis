@@ -10,6 +10,7 @@ authors = [
 ]
 dependencies = [
     "lightning>=2.6.1",
+    "mslk-cuda>=1.0.0",
     "onnx>=1.20.1",
     "onnxruntime>=1.24.1",
     "onnxruntime-gpu>=1.24.1",
