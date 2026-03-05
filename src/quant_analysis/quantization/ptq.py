@@ -1,7 +1,7 @@
 import copy
 import inspect
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -18,7 +18,7 @@ from torchao.quantization import (
 
 from src.quant_analysis.metric_calculation import (
     evaluate_mae,
-    evaluate_pytorch_latency_and_size,
+    evaluate_pytorch_latency_and_estimate_size,
 )
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,31 +28,37 @@ print(f"Using device: {device}")
 config_property_mapping = {
     "Float8DynamicActivationFloat8WeightConfig": {
         "precision": "float8",
+        "bits_per_weight": 8,
         "calibration": "dynamic",
         "weight_only": "no",
     },
     "Float8StaticActivationFloat8WeightConfig": {
         "precision": "float8",
+        "bits_per_weight": 8,
         "calibration": "static",
         "weight_only": "no",
     },
     "Int8DynamicActivationInt8WeightConfig": {
         "precision": "int8",
+        "bits_per_weight": 8,
         "calibration": "dynamic",
         "weight_only": "no",
     },
     "Int8WeightOnlyConfig": {
         "precision": "int8",
+        "bits_per_weight": 8,
         "calibration": "static",
         "weight_only": "yes",
     },
     "Float8WeightOnlyConfig": {
         "precision": "float8",
+        "bits_per_weight": 8,
         "calibration": "static",
         "weight_only": "yes",
     },
     "Int4WeightOnlyConfig": {
         "precision": "int4",
+        "bits_per_weight": 4,
         "calibration": "static",
         "weight_only": "yes",
     },
@@ -69,6 +75,7 @@ def quantize_ptq(
     is_static: bool = False,
     device: str | torch.device = "cpu",
     data: Optional[DataLoader] = None,
+    **kwargs,
 ):
 
     model = copy.deepcopy(base_model).to(device=device)
@@ -86,14 +93,14 @@ def quantize_ptq(
                             x = x.to(device)
                             model(x)
 
-                quantize_(model=model, config=ao_config(step="convert"))
+                quantize_(model=model, config=ao_config(step="convert", **kwargs))
 
             else:
                 # configs without observer flow
-                quantize_(model=model, config=ao_config())
+                quantize_(model=model, config=ao_config(**kwargs))
 
         else:
-            quantize_(model=model, config=ao_config())
+            quantize_(model=model, config=ao_config(**kwargs))
 
         return model
 
@@ -132,19 +139,21 @@ def run_ptq(
         base_model, Int8DynamicActivationInt8WeightConfig, device=evaluation_device
     )
 
-    model_i8w = quantize_ptq(base_model, Int8WeightOnlyConfig, device=evaluation_device)
+    model_i8w = quantize_ptq(
+        base_model, Int8WeightOnlyConfig, device=evaluation_device, version=2
+    )
     model_f8w = quantize_ptq(
         base_model, Float8WeightOnlyConfig, device=evaluation_device
     )
     model_i4w = quantize_ptq(base_model, Int4WeightOnlyConfig, device=evaluation_device)
 
-    model_config_name_list = [
-        (model_dynamic_f8a_f8w, "Float8DynamicActivationFloat8WeightConfig"),
-        (model_static_f8a_f8w, "Float8StaticActivationFloat8WeightConfig"),
-        (model_dynamic_i8a_i8w, "Int8DynamicActivationInt8WeightConfig"),
-        (model_i8w, "Int8WeightOnlyConfig"),
-        (model_f8w, "Float8WeightOnlyConfig"),
-        (model_i4w, "Int4WeightOnlyConfig"),
+    model_config_name_bit_list = [
+        (model_dynamic_f8a_f8w, "Float8DynamicActivationFloat8WeightConfig", 8),
+        (model_static_f8a_f8w, "Float8StaticActivationFloat8WeightConfig", 8),
+        (model_dynamic_i8a_i8w, "Int8DynamicActivationInt8WeightConfig", 8),
+        (model_i8w, "Int8WeightOnlyConfig", 8),
+        (model_f8w, "Float8WeightOnlyConfig", 8),
+        (model_i4w, "Int4WeightOnlyConfig", 4),
     ]
 
     # get the attributes of each config as a new dictionary
@@ -175,9 +184,10 @@ def run_ptq(
         baseline_median_latency,
         baseline_p95_latency,
         baseline_p99_latency,
-    ) = evaluate_pytorch_latency_and_size(
+    ) = evaluate_pytorch_latency_and_estimate_size(
         base_model,
         sample_input,
+        bits_per_weight=32,
         runs=latency_measurements,
         warmup=warmup_inferences,
         device=evaluation_device,
@@ -186,7 +196,7 @@ def run_ptq(
     if print_debug:
         print(f"starting model quantization")
 
-    for quantized_model, config_name in model_config_name_list:
+    for quantized_model, config_name, bits_per_weight in model_config_name_bit_list:
         print(f"Current config: {config_name}")
 
         if quantized_model is None:
@@ -212,9 +222,10 @@ def run_ptq(
                 metric_dict["quantized_median_latency"],
                 metric_dict["quantized_p95_latency"],
                 metric_dict["quantized_p99_latency"],
-            ) = evaluate_pytorch_latency_and_size(
+            ) = evaluate_pytorch_latency_and_estimate_size(
                 quantized_model,
                 sample_input,
+                bits_per_weight=bits_per_weight,
                 runs=latency_measurements,
                 warmup=warmup_inferences,
                 device=evaluation_device,

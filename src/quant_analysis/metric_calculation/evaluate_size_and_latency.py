@@ -1,4 +1,3 @@
-import io
 import os
 import tempfile
 import time
@@ -148,10 +147,16 @@ def evaluate_pt2_latency_and_size(
     )
 
 
-def evaluate_pytorch_latency_and_size(
+def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
+    total_weights = sum(p.numel() for p in model.parameters())
+    return total_weights * bits_per_weight / 8
+
+
+def evaluate_pytorch_latency_and_estimate_size(
     model: nn.Module,
     sample_input: torch.Tensor,
     device: str | torch.device,
+    bits_per_weight: int,
     runs: int = 200,
     warmup: int = 50,
 ):
@@ -161,9 +166,7 @@ def evaluate_pytorch_latency_and_size(
 
     model.eval()
 
-    buffer = io.BytesIO()
-    torch.save(model.state_dict(), buffer)
-    model_size = buffer.getbuffer().nbytes
+    model_size = estimate_quantized_size(model, bits_per_weight)
 
     device = torch.device(device)
 
