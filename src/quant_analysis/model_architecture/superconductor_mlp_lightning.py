@@ -3,9 +3,7 @@ from pathlib import Path
 
 import lightning as L
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.fusion import fuse_linear_bn_eval
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
@@ -18,6 +16,7 @@ from src.quant_analysis.model_architecture.model_configs import (
 from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 NUMBER_EPOCHS = 25
+
 
 class SuperconductorLightning(L.LightningModule):
     """
@@ -105,6 +104,7 @@ class SuperconductorLightning(L.LightningModule):
     ):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
+
 def construct_mlp(
     config: SimpleMLPConfig,
     learning_rate: float = 1e-3,
@@ -148,9 +148,9 @@ def construct_mlp(
         val_dataloaders=valid_loader,
     )
     trainer.test(model=mlp, dataloaders=test_loader)
-    
+
     mlp.model.eval()
-    
+
     config_dict = asdict(mlp.config)
     state_dict = mlp.model.state_dict()
 
