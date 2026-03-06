@@ -19,7 +19,6 @@ from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 NUMBER_EPOCHS = 25
 
-
 class SuperconductorLightning(L.LightningModule):
     """
     _summary_
@@ -106,23 +105,6 @@ class SuperconductorLightning(L.LightningModule):
     ):
         return torch.optim.Adam(self.parameters(), lr=self.lr)
 
-# helper function to enable batch norm fusion, which enables better quantization
-# TODO: in future, utilize the folding
-def fuse_mlp_bn(model: nn.Module):
-    model.eval()
-
-    seq = model.linear_stack
-
-    i = 0
-    while i < len(seq) - 1:
-        if isinstance(seq[i], torch.nn.Linear) and isinstance(seq[i+1], torch.nn.BatchNorm1d):
-            fused = fuse_linear_bn_eval(seq[i], seq[i+1])
-            seq[i] = fused
-            seq[i+1] = torch.nn.Identity()
-        i += 1
-
-    return model
-
 def construct_mlp(
     config: SimpleMLPConfig,
     learning_rate: float = 1e-3,
@@ -169,19 +151,8 @@ def construct_mlp(
     
     mlp.model.eval()
     
-    # # TODO: implement folding in such a way that model loading still works
-    # # if using batch norm, convert to an architecture that
-    # # eliminates batch norm usage and creates an augmented MLP
-    # # without those layers
-    # if config.use_batch_norm:
-    #     export_model = fuse_mlp_bn(model=mlp.model)
-    # else:
-    #     export_model = mlp.model
-        
-    export_model = mlp.model
-    
     config_dict = asdict(mlp.config)
-    state_dict = export_model.state_dict()
+    state_dict = mlp.model.state_dict()
 
     torch.save(
         {"config": config_dict, "state_dict": state_dict},
