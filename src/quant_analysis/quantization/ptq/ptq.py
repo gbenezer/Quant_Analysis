@@ -1,13 +1,15 @@
 import copy
 import inspect
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional, Union, Literal
 
 import torch
 import torch.nn as nn
+from torch.nn.utils.fusion import fuse_linear_bn_eval
 from torch.utils.data import DataLoader
 from torchao.quantization import (
     Float8DynamicActivationFloat8WeightConfig,
+    Float8DynamicActivationInt4WeightConfig,
     Float8StaticActivationFloat8WeightConfig,
     Float8WeightOnlyConfig,
     Int4WeightOnlyConfig,
@@ -22,9 +24,10 @@ from src.quant_analysis.metric_calculation import (
     evaluate_pt2_latency_and_size,
     evaluate_pytorch_latency_and_estimate_size,
 )
+from src.quant_analysis.model_architecture import SimpleMLP
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = "cpu"
+device = "cuda"
 print(f"Using device: {device}")
 
 config_property_mapping = {
@@ -64,24 +67,64 @@ config_property_mapping = {
         "calibration": "static",
         "weight_only": "yes",
     },
+    "Float8DynamicActivationInt4WeightConfig": {
+        "precision": "float8act_int4weight",
+        "bits_per_weight": 4,
+        "calibration": "dynamic",
+        "weight_only": "no",
+    },
 }
 
 
+# helper function
 def supports_step(config_cls):
     return "step" in inspect.signature(config_cls).parameters
 
+# Int4 weight-only quantization is supported only when the number of weights in all
+# layers is divisible by one of the given supported group sizes, so this is a
+# compatibility evaluation helper function
+def model_supports_int4(model: nn.Module, group_size=Literal[256, 128, 64, 32] = 128):
+    for name, m in model.named_modules():
+        if hasattr(m, "weight"):
+            in_features = m.weight.shape[-1]
+            if in_features % group_size != 0:
+                print(f"{name} incompatible: {in_features} % {group_size} != 0")
+                return False
+    return True
+
+# helper function to enable batch norm fusion, which enables better quantization
+def fuse_mlp_bn(model: SimpleMLP):
+
+    new_model = copy.deepcopy(model)
+    new_model.eval()
+
+    seq = new_model.linear_stack
+
+    i = 0
+    while i < len(seq) - 1:
+        if isinstance(seq[i], torch.nn.Linear) and isinstance(
+            seq[i + 1], torch.nn.BatchNorm1d
+        ):
+            fused = fuse_linear_bn_eval(seq[i], seq[i + 1])
+            seq[i] = fused
+            seq[i + 1] = torch.nn.Identity()
+        i += 1
+
+    return new_model
+
 
 def quantize_ptq(
-    base_model: nn.Module,
+    base_model: Union[nn.Module, SimpleMLP],
     ao_config: Any,
     is_static: bool = False,
-    device: str | torch.device = "cpu",
+    quantize_device: str | torch.device = "cpu",
     data: Optional[DataLoader] = None,
     **kwargs,
 ):
 
-    model = copy.deepcopy(base_model).to(device=device)
-    model.eval()
+    model = copy.deepcopy(base_model).to(device=quantize_device).eval()
+    if isinstance(model, SimpleMLP):
+        model = fuse_mlp_bn(model)
 
     try:
         if is_static:
@@ -92,7 +135,7 @@ def quantize_ptq(
                     if data is not None:
                         for batch in data:
                             x = batch[0] if isinstance(batch, (tuple, list)) else batch
-                            x = x.to(device)
+                            x = x.to(quantize_device)
                             model(x)
 
                 quantize_(model=model, config=ao_config(step="convert", **kwargs))
@@ -126,7 +169,9 @@ def run_full_ptq(
 
     # construct and quantize the models
     model_dynamic_f8a_f8w = quantize_ptq(
-        base_model, Float8DynamicActivationFloat8WeightConfig, device=evaluation_device
+        base_model,
+        Float8DynamicActivationFloat8WeightConfig,
+        quantize_device=evaluation_device,
     )
 
     model_static_f8a_f8w = quantize_ptq(
@@ -134,20 +179,24 @@ def run_full_ptq(
         Float8StaticActivationFloat8WeightConfig,
         is_static=True,
         data=dataloader,
-        device=evaluation_device,
+        quantize_device=evaluation_device,
     )
 
     model_dynamic_i8a_i8w = quantize_ptq(
-        base_model, Int8DynamicActivationInt8WeightConfig, device=evaluation_device
+        base_model,
+        Int8DynamicActivationInt8WeightConfig,
+        quantize_device=evaluation_device,
     )
 
     model_i8w = quantize_ptq(
-        base_model, Int8WeightOnlyConfig, device=evaluation_device, version=2
+        base_model, Int8WeightOnlyConfig, quantize_device=evaluation_device, version=2
     )
     model_f8w = quantize_ptq(
-        base_model, Float8WeightOnlyConfig, device=evaluation_device
+        base_model, Float8WeightOnlyConfig, quantize_device=evaluation_device
     )
-    model_i4w = quantize_ptq(base_model, Int4WeightOnlyConfig, device=evaluation_device)
+    model_i4w = quantize_ptq(
+        base_model, Int4WeightOnlyConfig, quantize_device=evaluation_device
+    )
 
     model_config_name_bit_list = [
         (model_dynamic_f8a_f8w, "Float8DynamicActivationFloat8WeightConfig", 8),
@@ -157,6 +206,36 @@ def run_full_ptq(
         (model_f8w, "Float8WeightOnlyConfig", 8),
         (model_i4w, "Int4WeightOnlyConfig", 4),
     ]
+
+    # this configuration is a bit wonky
+    try:
+        model_f8a_i4w = quantize_ptq(
+            base_model,
+            Float8DynamicActivationInt4WeightConfig,
+            quantize_device=evaluation_device,
+        )
+        model_config_name_bit_list.append(
+            (model_f8a_i4w, "Float8DynamicActivationInt4WeightConfig", 4)
+        )
+    except Exception as e:
+        print(f"Skipping Float8DynamicActivationInt4WeightConfig: {e}")
+
+    if print_debug:
+        for model, _, _ in model_config_name_bit_list:
+            print(model)
+        if model_i4w is not None:
+            w = model_i4w.linear_stack[0].weight
+            print(type(w))
+            print(type(w.tensor_impl))
+            
+            for name, param in model_i4w.named_parameters():
+                print(name, param.dtype)
+                if isinstance(model_i4w, SimpleMLP):
+                    print(type(model_i4w.linear_stack[0].weight))
+
+    # make sure that the base model is folded to ensure apples-to-apples comparison
+    if isinstance(base_model, SimpleMLP):
+        base_model = fuse_mlp_bn(base_model)
 
     # get the attributes of each config as a new dictionary
     output_dict = {}
@@ -169,13 +248,7 @@ def run_full_ptq(
     if print_debug:
         print(f"Baseline MAE: {baseline_MAE}")
 
-    input_dim = next(iter(dataloader))[0].shape[1]
-    sample_input = torch.randn(
-        batch_size,
-        input_dim,
-        device=evaluation_device,
-        dtype=next(base_model.parameters()).dtype,
-    )
+    sample_input = next(iter(dataloader))[0][:batch_size].to(evaluation_device)
 
     if print_debug:
         print(f"sample input shape: {sample_input.shape}")
@@ -210,10 +283,15 @@ def run_full_ptq(
         if print_debug:
             print(f"evaluating {config_name} MAE")
 
-        metric_dict["quantized_MAE"] = evaluate_mae(
-            model=quantized_model, dataloader=dataloader
-        )
-        metric_dict["relative_MAE"] = metric_dict["quantized_MAE"] / baseline_MAE
+        try:
+            metric_dict["quantized_MAE"] = evaluate_mae(
+                model=quantized_model, dataloader=dataloader
+            )
+            metric_dict["relative_MAE"] = metric_dict["quantized_MAE"] / baseline_MAE
+        except Exception as e:
+            print(f"Skipping {config_name}: {e}")
+            metric_dict["quantized_MAE"] = None
+            metric_dict["relative_MAE"] = None
 
         # evaluate model size and latency
         try:
@@ -273,18 +351,24 @@ def run_weight_only_ptq(
 
     # construct and quantize the models
     model_i8w = quantize_ptq(
-        base_model, Int8WeightOnlyConfig, device=evaluation_device, version=2
+        base_model, Int8WeightOnlyConfig, quantize_device=evaluation_device, version=2
     )
     model_f8w = quantize_ptq(
-        base_model, Float8WeightOnlyConfig, device=evaluation_device
+        base_model, Float8WeightOnlyConfig, quantize_device=evaluation_device
     )
-    model_i4w = quantize_ptq(base_model, Int4WeightOnlyConfig, device=evaluation_device)
+    model_i4w = quantize_ptq(
+        base_model, Int4WeightOnlyConfig, quantize_device=evaluation_device
+    )
 
     model_config_name_bit_list = [
         (model_i8w, "Int8WeightOnlyConfig", 8),
         (model_f8w, "Float8WeightOnlyConfig", 8),
         (model_i4w, "Int4WeightOnlyConfig", 4),
     ]
+
+    # make sure that the base model is folded to ensure apples-to-apples comparison
+    if isinstance(base_model, SimpleMLP):
+        base_model = fuse_mlp_bn(base_model)
 
     # get the attributes of each config as a new dictionary
     pytorch_output_dict = {}
@@ -300,23 +384,12 @@ def run_weight_only_ptq(
         print(f"Baseline MAE: {baseline_MAE}")
 
     input_dim = next(iter(dataloader))[0].shape[1]
-    sample_input = torch.randn(
-        batch_size,
-        input_dim,
-        device=evaluation_device,
-        dtype=next(base_model.parameters()).dtype,
-    )
+    sample_input = next(iter(dataloader))[0][:batch_size].to(evaluation_device)
 
     if print_debug:
         print(f"sample input shape: {sample_input.shape}")
         print("evaluating baseline latency and model size")
 
-    # (
-    #     baseline_model_size_pytorch,
-    #     baseline_median_latency_pytorch,
-    #     baseline_p95_latency_pytorch,
-    #     baseline_p99_latency_pytorch,
-    # )
     pytorch_size_latency_results = evaluate_pytorch_latency_and_estimate_size(
         base_model,
         sample_input,
@@ -326,12 +399,6 @@ def run_weight_only_ptq(
         device=evaluation_device,
     )
 
-    # (
-    #     baseline_model_size_onnx,
-    #     baseline_median_latency_onnx,
-    #     baseline_p95_latency_onnx,
-    #     baseline_p99_latency_onnx,
-    # )
     onnx_size_latency_results = evaluate_onnx_latency_and_size(
         base_model,
         input_dim,
@@ -340,12 +407,6 @@ def run_weight_only_ptq(
         device=evaluation_device,
     )
 
-    # (
-    #     baseline_model_size_pt2,
-    #     baseline_median_latency_pt2,
-    #     baseline_p95_latency_pt2,
-    #     baseline_p99_latency_pt2,
-    # )
     pt2_size_latency_results = evaluate_pt2_latency_and_size(
         base_model,
         input_dim,
