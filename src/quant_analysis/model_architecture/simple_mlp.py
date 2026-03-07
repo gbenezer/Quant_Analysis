@@ -1,8 +1,8 @@
+from typing import Any, List, Union
 from warnings import warn
 
 import torch
 import torch.nn as nn
-from typing import Union, List, Any
 
 from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 
@@ -39,7 +39,9 @@ class SimpleMLP(nn.Module):
             "celu": nn.CELU,
         }
 
-        self.activation_cls: Union[type[nn.Module], None] = activation_map[self.config.activation]
+        self.activation_cls: Union[type[nn.Module], None] = activation_map[
+            self.config.activation
+        ]
 
         if self.activation_cls is None:
             warn(
