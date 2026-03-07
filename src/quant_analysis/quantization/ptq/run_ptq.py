@@ -1,7 +1,7 @@
 import copy
 import inspect
 from pathlib import Path
-from typing import Any, Optional, Union, Literal
+from typing import Any, Literal, Optional, Union
 
 import torch
 import torch.nn as nn
@@ -12,6 +12,7 @@ from torchao.quantization import (
     Float8DynamicActivationInt4WeightConfig,
     Float8StaticActivationFloat8WeightConfig,
     Float8WeightOnlyConfig,
+    Int4Tensor,
     Int4WeightOnlyConfig,
     Int8DynamicActivationInt8WeightConfig,
     Int8WeightOnlyConfig,
@@ -25,9 +26,13 @@ from src.quant_analysis.metric_calculation import (
     evaluate_pytorch_latency_and_estimate_size,
 )
 from src.quant_analysis.model_architecture import SimpleMLP
+from src.quant_analysis.quantization.ptq.ptq_config_metadata import (
+    QUANT_CONFIG_METADATA,
+    WEIGHT_ONLY_CONFIG_METADATA,
+)
 
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = "cuda"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = "cpu"
 print(f"Using device: {device}")
 
 config_property_mapping = {
@@ -74,84 +79,6 @@ config_property_mapping = {
         "weight_only": "no",
     },
 }
-
-
-# helper function
-def supports_step(config_cls):
-    return "step" in inspect.signature(config_cls).parameters
-
-# Int4 weight-only quantization is supported only when the number of weights in all
-# layers is divisible by one of the given supported group sizes, so this is a
-# compatibility evaluation helper function
-def model_supports_int4(model: nn.Module, group_size=Literal[256, 128, 64, 32] = 128):
-    for name, m in model.named_modules():
-        if hasattr(m, "weight"):
-            in_features = m.weight.shape[-1]
-            if in_features % group_size != 0:
-                print(f"{name} incompatible: {in_features} % {group_size} != 0")
-                return False
-    return True
-
-# helper function to enable batch norm fusion, which enables better quantization
-def fuse_mlp_bn(model: SimpleMLP):
-
-    new_model = copy.deepcopy(model)
-    new_model.eval()
-
-    seq = new_model.linear_stack
-
-    i = 0
-    while i < len(seq) - 1:
-        if isinstance(seq[i], torch.nn.Linear) and isinstance(
-            seq[i + 1], torch.nn.BatchNorm1d
-        ):
-            fused = fuse_linear_bn_eval(seq[i], seq[i + 1])
-            seq[i] = fused
-            seq[i + 1] = torch.nn.Identity()
-        i += 1
-
-    return new_model
-
-
-def quantize_ptq(
-    base_model: Union[nn.Module, SimpleMLP],
-    ao_config: Any,
-    is_static: bool = False,
-    quantize_device: str | torch.device = "cpu",
-    data: Optional[DataLoader] = None,
-    **kwargs,
-):
-
-    model = copy.deepcopy(base_model).to(device=quantize_device).eval()
-    if isinstance(model, SimpleMLP):
-        model = fuse_mlp_bn(model)
-
-    try:
-        if is_static:
-            if supports_step(ao_config):
-                quantize_(model=model, config=ao_config(step="prepare"))
-
-                with torch.no_grad():
-                    if data is not None:
-                        for batch in data:
-                            x = batch[0] if isinstance(batch, (tuple, list)) else batch
-                            x = x.to(quantize_device)
-                            model(x)
-
-                quantize_(model=model, config=ao_config(step="convert", **kwargs))
-
-            else:
-                # configs without observer flow
-                quantize_(model=model, config=ao_config(**kwargs))
-
-        else:
-            quantize_(model=model, config=ao_config(**kwargs))
-
-        return model
-
-    except AssertionError as e:
-        print(f"Skipping {ao_config.__name__}: {e}")
-        return None
 
 
 def run_full_ptq(
@@ -224,18 +151,21 @@ def run_full_ptq(
         for model, _, _ in model_config_name_bit_list:
             print(model)
         if model_i4w is not None:
-            w = model_i4w.linear_stack[0].weight
-            print(type(w))
-            print(type(w.tensor_impl))
-            
-            for name, param in model_i4w.named_parameters():
-                print(name, param.dtype)
-                if isinstance(model_i4w, SimpleMLP):
-                    print(type(model_i4w.linear_stack[0].weight))
+            for name, module in model_i4w.named_modules():
+                if hasattr(module, "weight"):
+                    w = module.weight
+                    if isinstance(w, Int4Tensor):
+                        print(name, "INT4 quantized")
+                    else:
+                        print(name, "not quantized")
 
     # make sure that the base model is folded to ensure apples-to-apples comparison
     if isinstance(base_model, SimpleMLP):
         base_model = fuse_mlp_bn(base_model)
+
+    if print_debug and isinstance(base_model, SimpleMLP):
+        print("base_model post folding")
+        print(base_model)
 
     # get the attributes of each config as a new dictionary
     output_dict = {}
@@ -592,7 +522,7 @@ if __name__ == "__main__":
         _,
         test_loader,
     ) = get_superconductivity_data(
-        test_fraction=0.2, random_seed=12, n_workers=4, batch_n=32
+        test_fraction=0.2, random_seed=12, n_workers=4, batch_n=128
     )
 
     print("running ptq")
