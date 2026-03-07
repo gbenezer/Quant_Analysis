@@ -2,6 +2,7 @@ from warnings import warn
 
 import torch
 import torch.nn as nn
+from typing import Union, List, Any
 
 from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 
@@ -38,7 +39,7 @@ class SimpleMLP(nn.Module):
             "celu": nn.CELU,
         }
 
-        self.activation_cls = activation_map[self.config.activation]
+        self.activation_cls: Union[type[nn.Module], None] = activation_map[self.config.activation]
 
         if self.activation_cls is None:
             warn(
@@ -47,12 +48,12 @@ class SimpleMLP(nn.Module):
             self.activation_cls = nn.ReLU
 
         # construct the linear layer sequence adaptively
-        self.linear_stack = nn.Sequential(
+        layers: List[Any] = [
             nn.Linear(
                 in_features=self.config.input_dim,
                 out_features=self.config.neurons_per_layer[0],
             )
-        )
+        ]
 
         for layer in range(1, number_hidden_layers):
             # get the input and output number of features using the width list
@@ -62,30 +63,32 @@ class SimpleMLP(nn.Module):
             # if batch norm is specified, add a 1D batch normalization layer
             if self.config.use_batch_norm:
                 norm_layer = nn.BatchNorm1d(num_features=layer_input_features)
-                self.linear_stack.append(norm_layer)
+                layers.append(norm_layer)
 
             # add the activation layer
-            self.linear_stack.append(self.activation_cls())
+            layers.append(self.activation_cls())
 
             # add the linear layer
             current_linear_layer = nn.Linear(
                 in_features=layer_input_features, out_features=layer_output_features
             )
-            self.linear_stack.append(current_linear_layer)
+            layers.append(current_linear_layer)
 
         # add the last layers
         # regressing to temperature
         if self.config.use_batch_norm:
-            self.linear_stack.append(
+            layers.append(
                 nn.BatchNorm1d(num_features=self.config.neurons_per_layer[-1])
             )
-        self.linear_stack.append(self.activation_cls())
-        self.linear_stack.append(
+        layers.append(self.activation_cls())
+        layers.append(
             nn.Linear(
                 in_features=self.config.neurons_per_layer[-1],
                 out_features=self.config.output_dim,
             )
         )
+
+        self.linear_stack = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor):
         """_summary_
