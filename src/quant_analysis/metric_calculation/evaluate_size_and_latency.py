@@ -39,14 +39,44 @@ def measure_latency_onnx(
     return median, p95, p99
 
 
+# size estimation compatible with all PTQ configurations
 def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
     total_weights = sum(p.numel() for p in model.parameters())
     return total_weights * bits_per_weight / 8
 
 
+# function to assess relative performance on latency and size
+def assess_relative_performance(
+    quantized_model_performance: Tuple[Union[int, float], float, float, float],
+    base_model_performance: Tuple[Union[int, float], float, float, float],
+) -> Tuple[float, float, float, float]:
+
+    # model size
+    quantized_model_size_float = float(quantized_model_performance[0])
+    base_model_size_float = float(base_model_performance[0])
+    relative_model_size = quantized_model_size_float / base_model_size_float
+
+    # median latency
+    relative_median_latency = quantized_model_performance[1] / base_model_performance[1]
+
+    # p95 latency
+    relative_p95_latency = quantized_model_performance[2] / base_model_performance[2]
+
+    # p99 latency
+    relative_p99_latency = quantized_model_performance[3] / base_model_performance[3]
+
+    return (
+        relative_model_size,
+        relative_median_latency,
+        relative_p95_latency,
+        relative_p99_latency,
+    )
+
+
+# evaluation functions
 def evaluate_onnx_latency_and_size(
     model: nn.Module,
-    input_dim: int,
+    sample_input: torch.Tensor,
     device: str | torch.device,
     runs: int = 200,
     warmup: int = 50,
@@ -54,9 +84,7 @@ def evaluate_onnx_latency_and_size(
 
     model.eval()
 
-    input_sample = torch.randn(
-        (128, input_dim),
-        dtype=torch.float32,
+    input_sample = sample_input.to(
         device=device,
     )
 
@@ -97,7 +125,7 @@ def evaluate_onnx_latency_and_size(
 
 def evaluate_pt2_latency_and_size(
     model: nn.Module,
-    input_dim: int,
+    sample_input: torch.Tensor,
     device: str | torch.device,
     runs: int = 200,
     warmup: int = 50,
@@ -112,7 +140,7 @@ def evaluate_pt2_latency_and_size(
     model = model.to(device)
     model.eval()
 
-    sample_input = torch.randn(128, input_dim, device=device)
+    sample_input = sample_input.to(device=device)
 
     exported = torch.export.export(model, (sample_input,))
 
