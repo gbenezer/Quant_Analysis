@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 
 
+# helper functions
 def measure_latency_onnx(
     session: ort.InferenceSession,
     input_name: str,
@@ -38,12 +39,17 @@ def measure_latency_onnx(
     return median, p95, p99
 
 
+def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
+    total_weights = sum(p.numel() for p in model.parameters())
+    return total_weights * bits_per_weight / 8
+
+
 def evaluate_onnx_latency_and_size(
     model: nn.Module,
-    input_dim: int = 81,
-    device: str | torch.device = "cpu",
-    latency_measurements: int = 500,
-    warmup_inferences: int = 50,
+    input_dim: int,
+    device: str | torch.device,
+    runs: int = 200,
+    warmup: int = 50,
 ):
 
     model.eval()
@@ -82,8 +88,8 @@ def evaluate_onnx_latency_and_size(
             session,
             input_name,
             x,
-            latency_measurements,
-            warmup_inferences,
+            runs,
+            warmup,
         )
 
         return model_size_bytes, median_latency, p95_latency, p99_latency
@@ -92,9 +98,9 @@ def evaluate_onnx_latency_and_size(
 def evaluate_pt2_latency_and_size(
     model: nn.Module,
     input_dim: int,
-    num_runs: int = 200,
-    warmup_runs: int = 20,
-    device: Optional[Union[str, torch.device]] = None,
+    device: str | torch.device,
+    runs: int = 200,
+    warmup: int = 50,
 ) -> Tuple[int, float, float, float]:
 
     device = (
@@ -121,12 +127,12 @@ def evaluate_pt2_latency_and_size(
 
     os.remove(path)
 
-    for _ in range(warmup_runs):
+    for _ in range(warmup):
         module(sample_input)
 
     latencies = []
 
-    for _ in range(num_runs):
+    for _ in range(runs):
         start = time.perf_counter()
         module(sample_input)
         end = time.perf_counter()
@@ -145,11 +151,6 @@ def evaluate_pt2_latency_and_size(
         p95_latency,
         p99_latency,
     )
-
-
-def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
-    total_weights = sum(p.numel() for p in model.parameters())
-    return total_weights * bits_per_weight / 8
 
 
 def evaluate_pytorch_latency_and_estimate_size(
