@@ -163,11 +163,11 @@ def construct_mlp(
 
 
 if __name__ == "__main__":
-    # train the base models and save them both to checkpoint files and ONNX files
+    # train the base model and export to state dict and config
     base_config = SimpleMLPConfig(
         input_dim=81,
         output_dim=1,
-        neurons_per_layer=[324, 162, 81],
+        neurons_per_layer=[512, 256, 128],
         activation="relu",
         use_batch_norm=True,
     )
