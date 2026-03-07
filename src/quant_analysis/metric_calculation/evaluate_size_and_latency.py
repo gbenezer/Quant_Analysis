@@ -1,3 +1,4 @@
+import copy
 import os
 import tempfile
 import time
@@ -80,13 +81,13 @@ def evaluate_onnx_latency_and_size(
     device: str | torch.device,
     runs: int = 200,
     warmup: int = 50,
+    input_dtype: torch.dtype = torch.float32,
 ):
 
+    model = copy.deepcopy(model)
     model.eval()
 
-    input_sample = sample_input.to(
-        device=device,
-    )
+    input_sample = sample_input.to(device=device, dtype=input_dtype)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         onnx_path = Path(tmpdir) / "temp_model.onnx"
@@ -129,18 +130,19 @@ def evaluate_pt2_latency_and_size(
     device: str | torch.device,
     runs: int = 200,
     warmup: int = 50,
+    input_dtype: torch.dtype = torch.float32,
 ) -> Tuple[int, float, float, float]:
 
-    device = (
-        torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        if device is None
-        else device
-    )
+    device = next(model.parameters()).device if device is None else device
 
-    model = model.to(device)
+    # neet to enforce model device prior to this call
+    # if next(model.parameters()).device != torch.device(device):
+    #     # only move the model if necessary, as the movement causes issues with Int4
+    #     model = model.to(device)
+
     model.eval()
 
-    sample_input = sample_input.to(device=device)
+    sample_input = sample_input.to(device=device, dtype=input_dtype)
 
     exported = torch.export.export(model, (sample_input,))
 
@@ -188,10 +190,11 @@ def evaluate_pytorch_latency_and_estimate_size(
     bits_per_weight: int,
     runs: int = 200,
     warmup: int = 50,
+    input_dtype: torch.dtype = torch.float32,
 ):
 
-    model = model.to(device)
-    sample_input = sample_input.to(device)
+    model = copy.deepcopy(model).to(device)
+    sample_input = sample_input.to(device, dtype=input_dtype)
 
     model.eval()
 
