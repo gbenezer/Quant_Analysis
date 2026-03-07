@@ -1,12 +1,13 @@
 import copy
 import inspect
-from typing import Any, Optional, Union, Dict
+from typing import Any, Dict, Optional, Union
 
 import torch
 import torch.nn as nn
 from torch.nn.utils.fusion import fuse_linear_bn_eval
 from torch.utils.data import DataLoader
-from torchao.quantization import quantize_, Int4Tensor
+from torchao.core.config import AOBaseConfig
+from torchao.quantization import Int4Tensor, Int4WeightOnlyConfig, quantize_
 
 from src.quant_analysis.model_architecture import SimpleMLP
 
@@ -36,6 +37,7 @@ def fuse_mlp_bn(model: SimpleMLP):
 
     return new_model
 
+
 # helper function to evaluate which layers of an Int4 quantized model are actually quantized
 # to prevent silent failure
 def check_int4_quantization(model: nn.Module) -> Dict[str, Dict[str, Any]]:
@@ -43,7 +45,6 @@ def check_int4_quantization(model: nn.Module) -> Dict[str, Dict[str, Any]]:
     results = {}
 
     for name, module in model.named_modules():
-
         entry = {
             "module_type": type(module).__name__,
             "has_weight": False,
@@ -69,7 +70,7 @@ def check_int4_quantization(model: nn.Module) -> Dict[str, Dict[str, Any]]:
 
 def quantize_ptq(
     base_model: Union[nn.Module, SimpleMLP],
-    ao_config: Any,
+    ao_config: type[AOBaseConfig],
     is_static: bool = False,
     quantize_device: str | torch.device = "cpu",
     data: Optional[DataLoader] = None,
@@ -79,6 +80,13 @@ def quantize_ptq(
     model = copy.deepcopy(base_model).to(device=quantize_device).eval()
     if isinstance(model, SimpleMLP):
         model = fuse_mlp_bn(model)
+
+    if issubclass(ao_config, Int4WeightOnlyConfig) and torch.device(
+        device=quantize_device
+    ) == torch.device("cuda"):
+        print("For Int4WeightOnlyConfig, model must be contiguous on GPU and also BF16")
+        print("Converting to BF16 prior to quantization")
+        model = model.to(dtype=torch.bfloat16)
 
     try:
         if is_static:
