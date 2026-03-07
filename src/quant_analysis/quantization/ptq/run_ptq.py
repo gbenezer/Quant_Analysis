@@ -342,6 +342,7 @@ if __name__ == "__main__":
     )
     print("Result")
     train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
+    print(train_loader_full_df.head())
     print(train_loader_full_df.info())
 
     print("running ptq, weight only")
@@ -355,4 +356,5 @@ if __name__ == "__main__":
     )
     print("Result")
     train_loader_weight_df = ptq_results_to_dataframe(train_loader_weight_output)
+    print(train_loader_weight_df.head())
     print(train_loader_weight_df.info())
