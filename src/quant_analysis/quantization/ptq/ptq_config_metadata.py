@@ -1,4 +1,4 @@
-from typing import Any, Dict, NotRequired, TypedDict
+from typing import Any, Dict, TypedDict
 
 from torchao.core.config import AOBaseConfig
 from torchao.quantization import (
@@ -20,7 +20,7 @@ class ConfigAndMetadataPTQ(TypedDict, total=True):
     dynamic_calibration: bool
     weight_only: bool
     cuda_compute_capacity_compatibility: float
-    ao_config_kwargs: NotRequired[Dict[str, Any]]
+    ao_config_kwargs: Dict[str, Any]
 
 
 PTQ_WEIGHT_ONLY_CONFIG_METADATA = {
@@ -88,7 +88,7 @@ PTQ_WEIGHT_ACTIVATION_CONFIG_METADATA = {
         dynamic_calibration=True,
         weight_only=False,
         cuda_compute_capacity_compatibility=8.6,
-        ao_config_kwargs={"version": 2},
+        ao_config_kwargs={},
     ),
 }
 
