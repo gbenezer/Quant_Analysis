@@ -1,5 +1,6 @@
 from .evaluate_mean_absolute_error import evaluate_mae
 from .evaluate_size_and_latency import (
+    assess_relative_performance,
     evaluate_onnx_latency_and_size,
     evaluate_pt2_latency_and_size,
     evaluate_pytorch_latency_and_estimate_size,
@@ -10,4 +11,5 @@ __all__ = [
     "evaluate_onnx_latency_and_size",
     "evaluate_pt2_latency_and_size",
     "evaluate_pytorch_latency_and_estimate_size",
+    "assess_relative_performance",
 ]
