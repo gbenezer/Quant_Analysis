@@ -1,8 +1,9 @@
 # file for model architecture config dataclass definitions and helpers
 import json
+from typing import Callable
 from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
-
+import torch
 # dataclass definition section
 
 
@@ -27,8 +28,11 @@ class TransformerRegressorConfig:
     dropout: float              # Dropout rate
     output_dim: int             # Regression output (1 for scalar)
     pooling: str                # "cls", "mean", or "last"
+    activation: str | Callable[[torch.Tensor], torch.Tensor]
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
     use_positional_encoding: bool = False  # True for time-series
+    batch_first: bool = False
+    norm_first: bool = False
     
 @dataclass
 class EncoderOnlyRegressorConfig:
@@ -40,8 +44,11 @@ class EncoderOnlyRegressorConfig:
     dropout: float              # Dropout rate
     output_dim: int             # Regression output (1 for scalar)
     pooling: str                # "cls", "mean", or "last"
+    activation: str | Callable[[torch.Tensor], torch.Tensor]
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
     use_positional_encoding: bool = False  # True for time-series
+    batch_first: bool = False
+    norm_first: bool = False
    
 @dataclass
 class DecoderOnlyRegressorConfig:
@@ -53,8 +60,11 @@ class DecoderOnlyRegressorConfig:
     dropout: float              # Dropout rate
     output_dim: int             # Regression output (1 for scalar)
     pooling: str                # "cls", "mean", or "last"
+    activation: str | Callable[[torch.Tensor], torch.Tensor]
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
     use_positional_encoding: bool = False  # True for time-series
+    batch_first: bool = False
+    norm_first: bool = False
 
 # helper function section
 
