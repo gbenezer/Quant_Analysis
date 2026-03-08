@@ -15,8 +15,22 @@ class SimpleMLPConfig:
     use_batch_norm: bool
 
 
-# helper function section
+@dataclass
+class TransformerRegressorConfig:
+    input_dim: int              # Raw feature dimension
+    d_model: int                # Transformer hidden dimension
+    n_heads_encoder: int        # Attention heads per encoder layer
+    n_heads_decoder: int        # Attention heads per decoder layer
+    n_layers_encoder: int       # Encoder layers
+    n_layers_decoder: int       # Decoder layers
+    # d_ff: int                 # Feedforward dimension (typically 4 * d_model; will be hard-coded as such in the code)
+    dropout: float              # Dropout rate
+    output_dim: int             # Regression output (1 for scalar)
+    pooling: str                # "cls", "mean", or "last"
+    max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
+    use_positional_encoding: bool = False  # True for time-series
 
+# helper function section
 
 # generic model config saving
 def save_model_config(config, path: Path) -> None:
