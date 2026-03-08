@@ -9,6 +9,7 @@ authors = [
   {name = "Brent Garey", email = "garey.b@northeastern.edu"}
 ]
 dependencies = [
+    "datasets>=4.6.1",
     "lightning>=2.6.1",
     "mslk-cuda>=1.0.0",
     "onnx>=1.20.1",
@@ -21,6 +22,8 @@ dependencies = [
     "scipy>=1.17.0",
     "torch>=2.10.0",
     "torchao>=0.15.0",
+    "torchvision>=0.25.0",
+    "transformers>=5.3.0",
     "ucimlrepo>=0.0.7",
 ]
 
