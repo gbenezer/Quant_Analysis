@@ -17,7 +17,7 @@ class SimpleMLPConfig:
 
 
 @dataclass
-class TransformerRegressorConfig:
+class TransformerEncoderDecoderForecasterConfig:
     input_dim: int              # Raw feature dimension
     model_dim: int              # Transformer hidden dimension
     n_heads_encoder: int        # Attention heads per encoder layer
@@ -26,7 +26,7 @@ class TransformerRegressorConfig:
     n_layers_decoder: int       # Decoder layers
     feedforward_dim: int        # Feedforward dimension (typically 4 * d_model)
     dropout: float              # Dropout rate
-    output_dim: int             # Regression output (1 for scalar)
+    output_dim: int             # Regression output
     pooling: str                # "cls", "mean", or "last"
     activation: str
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
@@ -42,7 +42,7 @@ class EncoderOnlyRegressorConfig:
     n_layers_encoder: int       # Encoder layers
     feedforward_dim: int        # Feedforward dimension (typically 4 * d_model)
     dropout: float              # Dropout rate
-    output_dim: int             # Regression output (1 for scalar)
+    output_dim: int             # Regression output
     pooling: str                # "cls", "mean", or "last"
     activation: str
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
@@ -51,15 +51,14 @@ class EncoderOnlyRegressorConfig:
     norm_first: bool = False
    
 @dataclass
-class DecoderOnlyRegressorConfig:
+class DecoderOnlyForecasterConfig:
     input_dim: int              # Raw feature dimension
     model_dim: int              # Transformer hidden dimension
     n_heads_decoder: int        # Attention heads per decoder layer
     n_layers_decoder: int       # Decoder layers
     feedforward_dim: int        # Feedforward dimension (typically 4 * d_model)
     dropout: float              # Dropout rate
-    output_dim: int             # Regression output (1 for scalar)
-    pooling: str                # "cls", "mean", or "last"
+    output_dim: int             # Regression output
     activation: str
     max_seq_len: int = 1        # For tabular: 1; for time-series: sequence length
     use_positional_encoding: bool = False  # True for time-series
