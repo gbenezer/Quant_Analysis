@@ -35,7 +35,7 @@ class TransformerEncoderDecoderForecasterConfig:
     norm_first: bool = False
     
 @dataclass
-class EncoderOnlyRegressorConfig:
+class EncoderRegressorConfig:
     input_dim: int              # Raw feature dimension
     model_dim: int              # Transformer hidden dimension
     n_heads_encoder: int        # Attention heads per encoder layer
@@ -51,7 +51,7 @@ class EncoderOnlyRegressorConfig:
     norm_first: bool = False
    
 @dataclass
-class DecoderOnlyForecasterConfig:
+class DecoderForecasterConfig:
     input_dim: int              # Raw feature dimension
     model_dim: int              # Transformer hidden dimension
     n_heads_decoder: int        # Attention heads per decoder layer
