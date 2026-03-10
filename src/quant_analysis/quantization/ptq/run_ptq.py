@@ -6,6 +6,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from src.quant_analysis.data_processing.ptq_result_to_dataframe import (
+    ptq_results_to_dataframe,
+)
 from src.quant_analysis.metric_calculation import (
     assess_relative_performance,
     evaluate_mae,
@@ -21,7 +24,6 @@ from src.quant_analysis.quantization.ptq.ptq_config_metadata import (
     ConfigAndMetadataPTQ,
 )
 from src.quant_analysis.quantization.ptq.quantize_ptq import fuse_mlp_bn, quantize_ptq
-from src.quant_analysis.data_processing.ptq_result_to_dataframe import ptq_results_to_dataframe
 
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = "cpu"
