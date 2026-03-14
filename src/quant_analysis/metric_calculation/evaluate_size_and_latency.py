@@ -43,6 +43,7 @@ def measure_latency_onnx(
 # size estimation compatible with all PTQ configurations
 def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
     total_weights = sum(p.numel() for p in model.parameters())
+    # returns size in bytes as that is the native measure of size
     return total_weights * bits_per_weight / 8
 
 
