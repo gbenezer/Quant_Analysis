@@ -3,15 +3,17 @@
 # re-used prior work from CS 6140 project at
 # https://github.com/gbenezer/BO-for-NN-HPO-Project/blob/main/src/network/load_data.py
 
+from pathlib import Path
+
 import numpy as np
-import torch
 import pandas as pd
-import torch.utils.data as data
+import ramanspy as rp
+import torch
 import torch.nn.functional as F
+import torch.utils.data as data
 from sklearn.preprocessing import normalize, scale
 from ucimlrepo import fetch_ucirepo
-import ramanspy as rp
-from pathlib import Path
+
 
 # define Dataset class for Superconductivity data
 class SuperconductivityDataset(data.Dataset):
@@ -63,51 +65,52 @@ class SuperconductivityDataset(data.Dataset):
 
         return sample, target
 
+
 # define dataset for Adenine spectral data
 class AdenineSpectraDataset(data.Dataset):
-    
     def __init__(
         self,
         dtype: torch.dtype = torch.float32,
         path: Path = Path.cwd() / "data" / "ILSdata.csv",
         download: bool = False,
-        normalize_samples: bool = True
+        normalize_samples: bool = True,
     ):
         super().__init__()
-        
-        self.spectra, self.additional_features, self.labels = rp.datasets.adenine(file=path, download=download)
+
+        self.spectra, self.additional_features, self.labels = rp.datasets.adenine(
+            file=path, download=download
+        )
         self.dtype = dtype
         self.num_samples = len(self.labels)
         self.normalize_samples = normalize_samples
-        
-        if isinstance(self.spectra, pd.DataFrame) and isinstance(self.labels, pd.Series):
+
+        if isinstance(self.spectra, pd.DataFrame) and isinstance(
+            self.labels, pd.Series
+        ):
             # store spectral axis once (shared across all samples)
             self.spectral_axis = torch.tensor(
                 [float(x) for x in self.spectra.columns], dtype=self.dtype
             )
             self.num_wavenumbers = len(self.spectral_axis)
-            
+
             # spectral intensities: (num_samples, num_wavenumbers)
-            self.intensities = torch.tensor(
-                self.spectra.to_numpy(), dtype=self.dtype
-            )
-            
+            self.intensities = torch.tensor(self.spectra.to_numpy(), dtype=self.dtype)
+
             # labels
-            self.label_tensor = torch.tensor(
-                self.labels.to_numpy(), dtype=self.dtype
-            )
-        
+            self.label_tensor = torch.tensor(self.labels.to_numpy(), dtype=self.dtype)
+
     def __len__(self):
         return self.num_samples
-    
+
     def __getitem__(self, index):
         sample = self.intensities[index]  # shape: (num_wavenumbers,)
         target = self.label_tensor[index]
-        
+
         if self.normalize_samples:
             sample = F.normalize(sample, p=2, dim=0)  # L2 norm along spectral dim
-        
+
         return sample, target
+
 
 def get_superconductivity_data(
     test_fraction: float,
