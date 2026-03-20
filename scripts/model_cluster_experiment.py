@@ -1,11 +1,11 @@
 # script for running an experiment on the cluster with H200 GPU
 from pathlib import Path
-
+import os
+import subprocess
 import pandas as pd
 import torch
 import torch.multiprocessing as mp
 
-from data.load_data import get_superconductivity_data
 from src.quant_analysis.data_processing.ptq_result_to_dataframe import (
     ptq_results_to_dataframe,
 )
@@ -13,17 +13,27 @@ from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 from src.quant_analysis.model_architecture.superconductor_mlp_lightning import (
     construct_mlp,
 )
-from src.quant_analysis.quantization.ptq.run_ptq import run_ptq, run_ptq_isolated
+from src.quant_analysis.quantization.ptq.run_ptq import run_ptq_isolated
+
+def cancel_slurm_job(reason: str):
+    job_id = os.environ.get("SLURM_JOB_ID")
+    if job_id:
+        print(f"Cancelling SLURM job {job_id}: {reason}", flush=True)
+        subprocess.run(["scancel", job_id])
+    else:
+        raise RuntimeError(f"No SLURM_JOB_ID found. Reason for cancel: {reason}")
+
 
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
-    # os.environ["TMPDIR"] = "/tmp"
-    # tempfile.tempdir = "/tmp"
 
     # Define globals for script
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
     OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+    
+    MAX_FAILURES = 3
     NUMBER_TRAINING_EPOCHS = 25
     NUMBER_TRAINING_RUNS = 10
     NUMBER_EVALUATE_RUNS = 10
@@ -43,6 +53,8 @@ if __name__ == "__main__":
         test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
     )
 
+    
+    consecutive_failures = 0
     full_ptq_dataframe_list = []
     weight_only_ptq_dataframe_list = []
 
@@ -71,7 +83,16 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=False,
                 split="train",
+                timeout=1200
             )
+            if not train_loader_full_output:
+                consecutive_failures += 1
+                if consecutive_failures >= MAX_FAILURES:
+                    cancel_slurm_job("Too many consecutive worker failures")
+                continue
+            else:
+                consecutive_failures = 0  # reset on success
+            
             train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
             train_loader_full_df = train_loader_full_df.assign(
                 train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
@@ -88,7 +109,16 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=False,
                 split="test",
+                timeout=1200
             )
+            if not test_loader_full_output:
+                consecutive_failures += 1
+                if consecutive_failures >= MAX_FAILURES:
+                    cancel_slurm_job("Too many consecutive worker failures")
+                continue
+            else:
+                consecutive_failures = 0  # reset on success
+                
             test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
             test_loader_full_df = test_loader_full_df.assign(
                 train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
@@ -105,7 +135,16 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=True,
                 split="train",
+                timeout=1200
             )
+            if not train_loader_weight_output:
+                consecutive_failures += 1
+                if consecutive_failures >= MAX_FAILURES:
+                    cancel_slurm_job("Too many consecutive worker failures")
+                continue
+            else:
+                consecutive_failures = 0  # reset on success
+                
             train_loader_weight_df = ptq_results_to_dataframe(
                 train_loader_weight_output
             )
@@ -124,7 +163,16 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=True,
                 split="test",
+                timeout=1200
             )
+            
+            if not test_loader_weight_output:
+                consecutive_failures += 1
+                if consecutive_failures >= MAX_FAILURES:
+                    cancel_slurm_job("Too many consecutive worker failures")
+                continue
+            else:
+                consecutive_failures = 0  # reset on success
             test_loader_weight_df = ptq_results_to_dataframe(test_loader_weight_output)
             test_loader_weight_df = test_loader_weight_df.assign(
                 train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
