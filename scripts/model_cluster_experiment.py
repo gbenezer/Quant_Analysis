@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import torch
+import torch.multiprocessing as mp
 
 from data.load_data import get_superconductivity_data
 from src.quant_analysis.data_processing.ptq_result_to_dataframe import (
@@ -15,7 +16,7 @@ from src.quant_analysis.model_architecture.superconductor_mlp_lightning import (
 )
 from src.quant_analysis.quantization.ptq.run_ptq import run_ptq, run_ptq_isolated
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
 
     # Define globals for script
@@ -36,7 +37,7 @@ if __name__ = "__main__":
     # Intentional to evaluate variance
     SEED = None
 
-    # dictionary to properly feed the 
+    # dictionary to properly feed the
     DATALOADER_KWARGS = dict(
         test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
     )
@@ -58,25 +59,17 @@ if __name__ = "__main__":
             print(
                 f"getting evaluation data for training run {train_run + 1}, evaluation run {eval_run + 1}"
             )
-            (
-                _,
-                _,
-                _,
-                _,
-                train_loader,
-                _,
-                test_loader,
-            ) = get_superconductivity_data(
-                **DATALOADER_KWARGS
-            )
 
-            print("running ptq with size estimation on all configurations, train dataset")
+            print(
+                "running ptq with size estimation on all configurations, train dataset"
+            )
             train_loader_full_output = run_ptq_isolated(
                 base_model=test_model,
                 dataloader_kwargs=DATALOADER_KWARGS,
                 evaluation_device=str(device),  # spawn can't pickle torch.device
                 batch_size=128,
                 weight_only=False,
+                split="train",
             )
             train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
             train_loader_full_df = train_loader_full_df.assign(
@@ -84,13 +77,16 @@ if __name__ = "__main__":
             )
             full_ptq_dataframe_list.append(train_loader_full_df)
 
-            print("running ptq with size estimation on all configurations, test dataset")
+            print(
+                "running ptq with size estimation on all configurations, test dataset"
+            )
             test_loader_full_output = run_ptq_isolated(
                 base_model=test_model,
                 dataloader_kwargs=DATALOADER_KWARGS,
                 evaluation_device=str(device),
                 batch_size=128,
-                weight_only=True,
+                weight_only=False,
+                split="test",
             )
             test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
             test_loader_full_df = test_loader_full_df.assign(
@@ -101,15 +97,17 @@ if __name__ = "__main__":
             print(
                 "running ptq, weight only configurations, actual size measurement, train set"
             )
-            train_loader_weight_output = run_ptq(
+            train_loader_weight_output = run_ptq_isolated(
                 base_model=test_model,
-                dataloader=train_loader,
-                evaluation_device=device,
+                dataloader_kwargs=DATALOADER_KWARGS,
+                evaluation_device=str(device),
                 batch_size=128,
-                print_debug=True,
                 weight_only=True,
+                split="train",
             )
-            train_loader_weight_df = ptq_results_to_dataframe(train_loader_weight_output)
+            train_loader_weight_df = ptq_results_to_dataframe(
+                train_loader_weight_output
+            )
             train_loader_weight_df = train_loader_weight_df.assign(
                 train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
             )
@@ -118,13 +116,13 @@ if __name__ = "__main__":
             print(
                 "running ptq, weight only configurations, actual size measurement, test set"
             )
-            test_loader_weight_output = run_ptq(
+            test_loader_weight_output = run_ptq_isolated(
                 base_model=test_model,
-                dataloader=test_loader,
-                evaluation_device=device,
+                dataloader_kwargs=DATALOADER_KWARGS,
+                evaluation_device=str(device),
                 batch_size=128,
-                print_debug=True,
                 weight_only=True,
+                split="test",
             )
             test_loader_weight_df = ptq_results_to_dataframe(test_loader_weight_output)
             test_loader_weight_df = test_loader_weight_df.assign(
@@ -134,7 +132,6 @@ if __name__ = "__main__":
 
     full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
     weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-
 
     full_ptq_dataframe.to_csv((OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv"))
     weight_only_ptq_dataframe.to_csv(
