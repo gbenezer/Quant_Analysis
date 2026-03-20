@@ -112,6 +112,6 @@ def quantize_ptq(
 
         return model
 
-    except AssertionError as e:
+    except (AssertionError, RuntimeError) as e:
         print(f"Skipping {ao_config.__name__}: {e}")
         return None
