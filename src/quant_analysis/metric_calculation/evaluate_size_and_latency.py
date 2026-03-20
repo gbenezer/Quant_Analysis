@@ -101,6 +101,7 @@ def evaluate_onnx_latency_and_size(
             input_names=["input"],
             output_names=["output"],
             opset_version=18,
+            dynamo=True
         )
 
         # model size
@@ -138,6 +139,7 @@ def evaluate_pt2_latency_and_size(
     model.eval()
 
     actual_device = next(model.parameters()).device
+    is_cuda = actual_device.type == "cuda"
     sample_input = sample_input.to(device=actual_device, dtype=input_dtype)
     exported = torch.export.export(model, (sample_input,))
 
@@ -154,15 +156,19 @@ def evaluate_pt2_latency_and_size(
 
     for _ in range(warmup):
         module(sample_input)
+    if is_cuda:
+        torch.cuda.synchronize()
 
     latencies = []
 
     for _ in range(runs):
+        if is_cuda:
+            torch.cuda.synchronize()
         start = time.perf_counter()
         module(sample_input)
-        end = time.perf_counter()
-
-        latencies.append(end - start)
+        if is_cuda:
+            torch.cuda.synchronize()
+        latencies.append(time.perf_counter() - start)
 
     latencies = np.array(latencies)
 
@@ -188,7 +194,12 @@ def evaluate_pytorch_latency_and_estimate_size(
     input_dtype: torch.dtype = torch.float32,
 ):
 
-    model = copy.deepcopy(model).to(device)
+    try:
+        model = copy.deepcopy(model).to(device)
+    except Exception:
+        model = model.to(device)  # fall back to in-place move without copy
+        
+    
     sample_input = sample_input.to(device, dtype=input_dtype)
 
     model.eval()
