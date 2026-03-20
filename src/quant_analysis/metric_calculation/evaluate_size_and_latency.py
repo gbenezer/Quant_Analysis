@@ -88,17 +88,15 @@ def evaluate_onnx_latency_and_size(
     model = copy.deepcopy(model)
     model.eval()
 
-    input_sample = sample_input.to(device=device, dtype=input_dtype)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir="/tmp") as tmpdir:
         onnx_path = Path(tmpdir) / "temp_model.onnx"
 
-        model_cpu = model.to("cpu")
-        input_sample = input_sample.to("cpu")
+        export_device = next(model.parameters()).device
+        input_for_export = sample_input.to(device=export_device, dtype=input_dtype)
 
         torch.onnx.export(
-            model_cpu,
-            (input_sample,),
+            model,
+            (input_for_export,),
             onnx_path,
             input_names=["input"],
             output_names=["output"],
@@ -109,10 +107,13 @@ def evaluate_onnx_latency_and_size(
         model_size_bytes = onnx_path.stat().st_size
 
         # ONNX Runtime session
-        session = ort.InferenceSession(str(onnx_path))
+        sess_options = ort.SessionOptions()
+        sess_options.intra_op_num_threads = int(os.environ.get("ORT_NUM_THREADS", 4))
+        sess_options.inter_op_num_threads = int(os.environ.get("ORT_NUM_THREADS", 4))
+        session = ort.InferenceSession(str(onnx_path), sess_options=sess_options)
 
         input_name = session.get_inputs()[0].name
-        x = input_sample.numpy()
+        x = input_for_export.cpu().numpy()
 
         median_latency, p95_latency, p99_latency = measure_latency_onnx(
             session,
@@ -134,22 +135,15 @@ def evaluate_pt2_latency_and_size(
     input_dtype: torch.dtype = torch.float32,
 ) -> Tuple[int, float, float, float]:
 
-    device = next(model.parameters()).device if device is None else device
-
-    # neet to enforce model device prior to this call
-    # if next(model.parameters()).device != torch.device(device):
-    #     # only move the model if necessary, as the movement causes issues with Int4
-    #     model = model.to(device)
-
     model.eval()
 
-    sample_input = sample_input.to(device=device, dtype=input_dtype)
-
+    actual_device = next(model.parameters()).device
+    sample_input = sample_input.to(device=actual_device, dtype=input_dtype)
     exported = torch.export.export(model, (sample_input,))
 
     module = exported.module()
 
-    with tempfile.NamedTemporaryFile(suffix=".pt2", delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".pt2", delete=False, dir="/tmp") as f:
         path = f.name
 
     torch.export.save(exported, path)
