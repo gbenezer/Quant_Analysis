@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from pathlib import Path
+import copy
 
 import lightning as L
 import torch
@@ -158,6 +159,8 @@ def construct_mlp(
     )
 
     save_model_config(config=mlp.config, path=(config_directory / f"{name}.json"))
+
+    return copy.deepcopy(mlp.model)
 
 
 if __name__ == "__main__":
