@@ -1,5 +1,4 @@
 # script for running an experiment on the cluster with H200 GPU
-
 from pathlib import Path
 
 import pandas as pd
@@ -18,15 +17,17 @@ from src.quant_analysis.quantization.ptq.run_ptq import run_ptq, run_ptq_isolate
 
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
+    # os.environ["TMPDIR"] = "/tmp"
+    # tempfile.tempdir = "/tmp"
 
     # Define globals for script
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
     OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
     OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
     NUMBER_TRAINING_EPOCHS = 25
     NUMBER_TRAINING_RUNS = 10
     NUMBER_EVALUATE_RUNS = 10
+
     base_config = SimpleMLPConfig(
         input_dim=81,
         output_dim=1,
