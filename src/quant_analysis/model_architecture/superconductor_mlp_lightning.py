@@ -1,6 +1,6 @@
+import copy
 from dataclasses import asdict
 from pathlib import Path
-import copy
 
 import lightning as L
 import torch
