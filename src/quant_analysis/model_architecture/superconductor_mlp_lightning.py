@@ -15,8 +15,6 @@ from src.quant_analysis.model_architecture.model_configs import (
 )
 from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
-NUMBER_EPOCHS = 25
-
 
 class SuperconductorLightning(L.LightningModule):
     """
@@ -115,7 +113,7 @@ def construct_mlp(
     config_directory: Path = (Path.cwd() / "models" / "configs"),
     state_dict_directory: Path = (Path.cwd() / "models" / "state_dicts"),
     test_fraction: float = 0.2,
-    seed: int = 42,
+    seed: int | None = 42,
     n_workers: int = 4,
     batch_n: int = 64,
 ):
@@ -164,6 +162,7 @@ def construct_mlp(
 
 if __name__ == "__main__":
     # train the base model and export to state dict and config
+    NUMBER_EPOCHS = 25
     base_config = SimpleMLPConfig(
         input_dim=81,
         output_dim=1,
