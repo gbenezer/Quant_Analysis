@@ -19,8 +19,8 @@ from src.quant_analysis.quantization.ptq.run_ptq import run_ptq
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 NUMBER_TRAINING_EPOCHS = 25
-NUMBER_TRAINING_RUNS = 1
-NUMBER_EVALUATE_RUNS = 1
+NUMBER_TRAINING_RUNS = 10
+NUMBER_EVALUATE_RUNS = 10
 base_config = SimpleMLPConfig(
     input_dim=81,
     output_dim=1,
@@ -28,6 +28,8 @@ base_config = SimpleMLPConfig(
     activation="gelu",
     use_batch_norm=True,
 )
+# Intentional to evaluate variance
+SEED = None
 
 full_ptq_dataframe_list = []
 weight_only_ptq_dataframe_list = []
@@ -38,23 +40,25 @@ for train_run in range(NUMBER_TRAINING_RUNS):
         config=base_config,
         name=f"base_model_FP32_train_run_{train_run + 1}",
         max_epochs=NUMBER_TRAINING_EPOCHS,
-        seed=None,
-    )
-
-    print(f"getting evaluation data for training run {train_run + 1}")
-    (
-        _,
-        _,
-        _,
-        _,
-        train_loader,
-        _,
-        test_loader,
-    ) = get_superconductivity_data(
-        test_fraction=0.2, random_seed=None, n_workers=4, batch_n=128
+        seed=SEED,
     )
 
     for eval_run in range(NUMBER_EVALUATE_RUNS):
+        print(
+            f"getting evaluation data for training run {train_run + 1}, evaluation run {eval_run + 1}"
+        )
+        (
+            _,
+            _,
+            _,
+            _,
+            train_loader,
+            _,
+            test_loader,
+        ) = get_superconductivity_data(
+            test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
+        )
+
         print("running ptq with size estimation on all configurations, train dataset")
         train_loader_full_output = run_ptq(
             base_model=test_model,
