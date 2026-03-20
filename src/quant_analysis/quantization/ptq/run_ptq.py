@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, NotRequired, Tuple, TypedDict
 
 import torch
+import torch.multiprocessing as mp
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -28,6 +29,44 @@ from src.quant_analysis.quantization.ptq.quantize_ptq import fuse_mlp_bn, quanti
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = "cpu"
 print(f"Using device: {device}")
+
+
+# AI generated code to attempt to address multiprocessing thread corruption when executing on
+# the RC cluster
+def _ptq_worker(
+    result_queue: mp.Queue,
+    base_model: nn.Module,
+    dataloader_args: Dict[
+        str, Any
+    ],  # args to reconstruct dataloader, not the loader itself
+    evaluation_device: str,
+    batch_size: int,
+    runs: int,
+    warmup: int,
+    weight_only: bool,
+):
+    """Runs in an isolated subprocess with its own CUDA context."""
+    try:
+        # reconstruct dataloader inside subprocess
+        from data.load_data import get_superconductivity_data
+
+        _, _, _, _, train_loader, _, test_loader = get_superconductivity_data(
+            **dataloader_args
+        )
+        loader = train_loader if not weight_only else test_loader
+
+        result = run_ptq(
+            base_model=base_model,
+            dataloader=loader,
+            evaluation_device=evaluation_device,
+            batch_size=batch_size,
+            runs=runs,
+            warmup=warmup,
+            weight_only=weight_only,
+        )
+        result_queue.put(("ok", result))
+    except Exception as e:
+        result_queue.put(("error", str(e)))
 
 
 # helper function to construct all the quantized models
