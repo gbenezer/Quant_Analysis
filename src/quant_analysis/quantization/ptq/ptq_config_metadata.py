@@ -31,7 +31,7 @@ PTQ_WEIGHT_ONLY_CONFIG_METADATA = {
         dynamic_calibration=False,
         weight_only=True,
         cuda_compute_capacity_compatibility=8.6,
-        ao_config_kwargs={"version": 2},
+        ao_config_kwargs={},
     ),
     "Float8WeightOnlyConfig": ConfigAndMetadataPTQ(
         ao_config=Float8WeightOnlyConfig,
