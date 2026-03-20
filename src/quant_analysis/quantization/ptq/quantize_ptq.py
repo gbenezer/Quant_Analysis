@@ -12,7 +12,8 @@ from torchao.quantization import Int4Tensor, Int4WeightOnlyConfig, quantize_
 from src.quant_analysis.model_architecture import SimpleMLP
 
 
-# helper function
+# helper function to evaluate whether or not a static configuration supports
+# the new interface
 def supports_step(config_cls):
     return "step" in inspect.signature(config_cls).parameters
 
@@ -27,7 +28,9 @@ def fuse_mlp_bn(model: SimpleMLP) -> SimpleMLP:
 
     i = 0
     while i < len(modules) - 1:
-        if isinstance(modules[i], nn.Linear) and isinstance(modules[i + 1], nn.BatchNorm1d):
+        if isinstance(modules[i], nn.Linear) and isinstance(
+            modules[i + 1], nn.BatchNorm1d
+        ):
             modules[i] = fuse_linear_bn_eval(modules[i], modules[i + 1])
             modules[i + 1] = nn.Identity()
         i += 1
