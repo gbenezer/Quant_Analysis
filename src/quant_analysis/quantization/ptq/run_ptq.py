@@ -1,3 +1,5 @@
+import os
+import tempfile
 from numbers import Real
 from pathlib import Path
 from typing import Any, Dict, NotRequired, Tuple, TypedDict
@@ -26,10 +28,6 @@ from src.quant_analysis.quantization.ptq.ptq_config_metadata import (
 )
 from src.quant_analysis.quantization.ptq.quantize_ptq import fuse_mlp_bn, quantize_ptq
 
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = "cpu"
-print(f"Using device: {device}")
-
 
 # AI generated code to attempt to address multiprocessing thread corruption when executing on
 # the RC cluster
@@ -49,6 +47,9 @@ def _ptq_worker(
     split: str,
 ):
     """Runs in an isolated subprocess with its own CUDA context."""
+    os.environ["TMPDIR"] = "/tmp"
+    tempfile.tempdir = "/tmp"
+
     try:
         # reconstruct dataloader inside subprocess
         from data.load_data import get_superconductivity_data
@@ -404,6 +405,10 @@ def run_ptq(
 
 if __name__ == "__main__":
     from data.load_data import get_superconductivity_data
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = "cpu"
+    print(f"Using device: {device}")
 
     print("loading model")
     test_model = load_mlp_from_pth(
