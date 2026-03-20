@@ -81,15 +81,15 @@ PTQ_WEIGHT_ACTIVATION_CONFIG_METADATA = {
         cuda_compute_capacity_compatibility=8.6,
         ao_config_kwargs={"version": 2},
     ),
-    "Float8DynamicActivationInt4WeightConfig": ConfigAndMetadataPTQ(
-        ao_config=Float8DynamicActivationInt4WeightConfig,
-        precision="float8act_int4weight",
-        bits_per_weight=4,
-        dynamic_calibration=True,
-        weight_only=False,
-        cuda_compute_capacity_compatibility=8.6,
-        ao_config_kwargs={},
-    ),
+    # "Float8DynamicActivationInt4WeightConfig": ConfigAndMetadataPTQ(
+    #     ao_config=Float8DynamicActivationInt4WeightConfig,
+    #     precision="float8act_int4weight",
+    #     bits_per_weight=4,
+    #     dynamic_calibration=True,
+    #     weight_only=False,
+    #     cuda_compute_capacity_compatibility=8.6,
+    #     ao_config_kwargs={},
+    # ),
 }
 
 PTQ_QUANT_CONFIG_METADATA = (
