@@ -18,6 +18,8 @@ from src.quant_analysis.quantization.ptq.run_ptq import run_ptq
 # Define globals for script
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
+OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
+OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 NUMBER_TRAINING_EPOCHS = 25
 NUMBER_TRAINING_RUNS = 10
 NUMBER_EVALUATE_RUNS = 10
@@ -126,9 +128,8 @@ for train_run in range(NUMBER_TRAINING_RUNS):
 full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
 weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
 
-full_ptq_dataframe.to_csv(
-    Path.cwd() / "data" / "output" / "full_ptq_baseline_experiment_data.csv"
-)
+
+full_ptq_dataframe.to_csv((OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv"))
 weight_only_ptq_dataframe.to_csv(
-    Path.cwd() / "data" / "output" / "weight_only_ptq_baseline_experiment_data.csv"
+    (OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
 )
