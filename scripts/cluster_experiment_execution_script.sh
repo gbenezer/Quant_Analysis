@@ -6,6 +6,7 @@
 #SBATCH --job-name=baseline_experiment_1
 #SBATCH --mem=32GB
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=5
 #SBATCH --output=myjob.%j.out
 #SBATCH --error=myjob.%j.err
 
