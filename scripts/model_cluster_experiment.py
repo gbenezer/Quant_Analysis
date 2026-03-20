@@ -13,7 +13,10 @@ from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 from src.quant_analysis.model_architecture.superconductor_mlp_lightning import (
     construct_mlp,
 )
-from src.quant_analysis.quantization.ptq.run_ptq import run_ptq
+from src.quant_analysis.quantization.ptq.run_ptq import run_ptq, run_ptq_isolated
+
+if __name__ = "__main__":
+    mp.set_start_method("spawn", force=True)
 
 # Define globals for script
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -33,6 +36,11 @@ base_config = SimpleMLPConfig(
 # Intentional to evaluate variance
 SEED = None
 
+# dictionary to properly feed the 
+DATALOADER_KWARGS = dict(
+    test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
+)
+
 full_ptq_dataframe_list = []
 weight_only_ptq_dataframe_list = []
 
@@ -44,6 +52,7 @@ for train_run in range(NUMBER_TRAINING_RUNS):
         max_epochs=NUMBER_TRAINING_EPOCHS,
         seed=SEED,
     )
+    test_model.share_memory()  # required for passing model to subprocess
 
     for eval_run in range(NUMBER_EVALUATE_RUNS):
         print(
@@ -58,16 +67,15 @@ for train_run in range(NUMBER_TRAINING_RUNS):
             _,
             test_loader,
         ) = get_superconductivity_data(
-            test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
+            **DATALOADER_KWARGS
         )
 
         print("running ptq with size estimation on all configurations, train dataset")
-        train_loader_full_output = run_ptq(
+        train_loader_full_output = run_ptq_isolated(
             base_model=test_model,
-            dataloader=train_loader,
-            evaluation_device=device,
+            dataloader_kwargs=DATALOADER_KWARGS,
+            evaluation_device=str(device),  # spawn can't pickle torch.device
             batch_size=128,
-            print_debug=True,
             weight_only=False,
         )
         train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
@@ -77,13 +85,12 @@ for train_run in range(NUMBER_TRAINING_RUNS):
         full_ptq_dataframe_list.append(train_loader_full_df)
 
         print("running ptq with size estimation on all configurations, test dataset")
-        test_loader_full_output = run_ptq(
+        test_loader_full_output = run_ptq_isolated(
             base_model=test_model,
-            dataloader=test_loader,
-            evaluation_device=device,
+            dataloader_kwargs=DATALOADER_KWARGS,
+            evaluation_device=str(device),
             batch_size=128,
-            print_debug=True,
-            weight_only=False,
+            weight_only=True,
         )
         test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
         test_loader_full_df = test_loader_full_df.assign(

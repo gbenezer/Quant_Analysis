@@ -33,6 +33,8 @@ print(f"Using device: {device}")
 
 # AI generated code to attempt to address multiprocessing thread corruption when executing on
 # the RC cluster
+# TODO: learn enough about multithreading and CUDA issues and 
+# then properly comment and document this code
 def _ptq_worker(
     result_queue: mp.Queue,
     base_model: nn.Module,
@@ -67,6 +69,48 @@ def _ptq_worker(
         result_queue.put(("ok", result))
     except Exception as e:
         result_queue.put(("error", str(e)))
+
+
+def run_ptq_isolated(
+    base_model: nn.Module,
+    dataloader_kwargs: Dict[str, Any],
+    evaluation_device: str,
+    batch_size: int,
+    weight_only: bool,
+    timeout: int = 300,
+) -> Dict:
+
+    ctx = mp.get_context("spawn")  # spawn is required for CUDA isolation
+    result_queue = ctx.Queue()
+
+    p = ctx.Process(
+        target=_ptq_worker,
+        args=(
+            result_queue,
+            base_model,
+            dataloader_kwargs,
+            evaluation_device,
+            batch_size,
+            weight_only,
+        ),
+    )
+    p.start()
+    p.join(timeout=timeout)
+
+    if p.exitcode != 0:
+        print(f"Worker process exited with code {p.exitcode}, skipping")
+        return {}
+
+    if result_queue.empty():
+        print("Worker produced no result (likely OOM or CUDA crash), skipping")
+        return {}
+
+    status, payload = result_queue.get()
+    if status == "error":
+        print(f"Worker error: {payload}")
+        return {}
+
+    return payload
 
 
 # helper function to construct all the quantized models
