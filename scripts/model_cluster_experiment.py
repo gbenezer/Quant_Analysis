@@ -178,11 +178,15 @@ if __name__ == "__main__":
                 train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
             )
             weight_only_ptq_dataframe_list.append(test_loader_weight_df)
+    
+    if full_ptq_dataframe_list:
+        full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
+        full_ptq_dataframe.to_csv(OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv")
+    else:
+        print("No full PTQ results collected.")
 
-    full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-    weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-
-    full_ptq_dataframe.to_csv((OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv"))
-    weight_only_ptq_dataframe.to_csv(
-        (OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
-    )
+    if weight_only_ptq_dataframe_list:
+        weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
+        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
+    else:
+        print("No weight-only PTQ results collected.")
