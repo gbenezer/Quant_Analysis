@@ -33,12 +33,12 @@ print(f"Using device: {device}")
 
 # AI generated code to attempt to address multiprocessing thread corruption when executing on
 # the RC cluster
-# TODO: learn enough about multithreading and CUDA issues and 
+# TODO: learn enough about multithreading and CUDA issues and
 # then properly comment and document this code
 def _ptq_worker(
     result_queue: mp.Queue,
     base_model: nn.Module,
-    dataloader_args: Dict[
+    dataloader_kwargs: Dict[
         str, Any
     ],  # args to reconstruct dataloader, not the loader itself
     evaluation_device: str,
@@ -46,6 +46,7 @@ def _ptq_worker(
     runs: int,
     warmup: int,
     weight_only: bool,
+    split: str,
 ):
     """Runs in an isolated subprocess with its own CUDA context."""
     try:
@@ -53,9 +54,9 @@ def _ptq_worker(
         from data.load_data import get_superconductivity_data
 
         _, _, _, _, train_loader, _, test_loader = get_superconductivity_data(
-            **dataloader_args
+            **dataloader_kwargs
         )
-        loader = train_loader if not weight_only else test_loader
+        loader = train_loader if split == "train" else test_loader
 
         result = run_ptq(
             base_model=base_model,
@@ -77,6 +78,9 @@ def run_ptq_isolated(
     evaluation_device: str,
     batch_size: int,
     weight_only: bool,
+    split: str,
+    runs: int = 500,
+    warmup: int = 50,
     timeout: int = 300,
 ) -> Dict:
 
@@ -91,7 +95,10 @@ def run_ptq_isolated(
             dataloader_kwargs,
             evaluation_device,
             batch_size,
+            runs,
+            warmup,
             weight_only,
+            split,
         ),
     )
     p.start()
