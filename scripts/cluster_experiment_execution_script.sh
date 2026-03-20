@@ -22,6 +22,8 @@ module load cuda/12.8.0
 # hopefully this fixes some thread errors
 export OMP_NUM_THREADS=4
 export ORT_NUM_THREADS=4
+export TMPDIR=/tmp
+export XLA_FLAGS="--xla_dump_to=/tmp/xla_dump"
 
 # checking the driver
 nvidia-smi
