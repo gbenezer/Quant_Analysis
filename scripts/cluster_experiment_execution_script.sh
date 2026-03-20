@@ -20,7 +20,8 @@ module unload cuda
 module load cuda/12.8.0
 
 # hopefully this fixes some thread errors
-export OMP_NUM_THREADS=1
+export OMP_NUM_THREADS=4
+export ORT_NUM_THREADS=4
 
 # checking the driver
 nvidia-smi
