@@ -114,7 +114,7 @@ class AdenineSpectraDataset(data.Dataset):
 
 def get_superconductivity_data(
     test_fraction: float,
-    random_seed: int,
+    random_seed: int | None,
     n_workers: int,
     batch_n: int,
     dtype: torch.dtype = torch.float32,
@@ -147,28 +147,51 @@ def get_superconductivity_data(
     # splitting off the test dataset
     test_size = int(len(full_dataset) * test_fraction)
     non_test_size = len(full_dataset) - test_size
-    seed = torch.Generator().manual_seed(random_seed)
-    test_set, non_test_set = data.random_split(
-        full_dataset, [test_size, non_test_size], generator=seed
-    )
+    if random_seed is not None:
+        seed = torch.Generator().manual_seed(random_seed)
+        test_set, non_test_set = data.random_split(
+            full_dataset, [test_size, non_test_size], generator=seed
+        )
 
-    # splitting the remaining set into training and validation sets
-    if validation_set:
-        valid_size = int(len(non_test_set) * valid_fraction)
-        train_size = len(non_test_set) - valid_size
-        train_set, valid_set = data.random_split(
-            non_test_set, [train_size, valid_size], generator=seed
-        )
-        valid_loader = torch.utils.data.DataLoader(
-            dataset=valid_set,
-            num_workers=n_workers,
-            batch_size=batch_n,
-            persistent_workers=True,
-        )
+        # splitting the remaining set into training and validation sets
+        if validation_set:
+            valid_size = int(len(non_test_set) * valid_fraction)
+            train_size = len(non_test_set) - valid_size
+            train_set, valid_set = data.random_split(
+                non_test_set, [train_size, valid_size], generator=seed
+            )
+            valid_loader = torch.utils.data.DataLoader(
+                dataset=valid_set,
+                num_workers=n_workers,
+                batch_size=batch_n,
+                persistent_workers=True,
+            )
+        else:
+            train_set = non_test_set
+            valid_set = None
+            valid_loader = None
     else:
-        train_set = non_test_set
-        valid_set = None
-        valid_loader = None
+        test_set, non_test_set = data.random_split(
+            full_dataset, [test_size, non_test_size]
+        )
+
+        # splitting the remaining set into training and validation sets
+        if validation_set:
+            valid_size = int(len(non_test_set) * valid_fraction)
+            train_size = len(non_test_set) - valid_size
+            train_set, valid_set = data.random_split(
+                non_test_set, [train_size, valid_size]
+            )
+            valid_loader = torch.utils.data.DataLoader(
+                dataset=valid_set,
+                num_workers=n_workers,
+                batch_size=batch_n,
+                persistent_workers=True,
+            )
+        else:
+            train_set = non_test_set
+            valid_set = None
+            valid_loader = None
 
     # creating the DataLoader objects
     # creating the test data DataLoader
