@@ -16,8 +16,8 @@ def evaluate_mae(
     with torch.no_grad():
         for batch in dataloader:
             X = batch[0].to(device=device, dtype=input_dtype)
-            y = batch[1].to(device)
             pred = model(X)
+            y = batch[1].to(device=device, dtype=pred.dtype)
             absolute_error += loss_function(pred, y).item()
 
     return absolute_error / num_samples
