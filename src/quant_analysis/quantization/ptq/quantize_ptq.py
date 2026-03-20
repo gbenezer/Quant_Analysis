@@ -18,23 +18,21 @@ def supports_step(config_cls):
 
 
 # helper function to enable batch norm fusion, which enables better quantization
-def fuse_mlp_bn(model: SimpleMLP):
-
+def fuse_mlp_bn(model: SimpleMLP) -> SimpleMLP:
     new_model = copy.deepcopy(model)
     new_model.eval()
 
     seq = new_model.linear_stack
+    modules = list(seq.children())
 
     i = 0
-    while i < len(seq) - 1:
-        if isinstance(seq[i], torch.nn.Linear) and isinstance(
-            seq[i + 1], torch.nn.BatchNorm1d
-        ):
-            fused = fuse_linear_bn_eval(seq[i], seq[i + 1])
-            seq[i] = fused
-            seq[i + 1] = torch.nn.Identity()
+    while i < len(modules) - 1:
+        if isinstance(modules[i], nn.Linear) and isinstance(modules[i + 1], nn.BatchNorm1d):
+            modules[i] = fuse_linear_bn_eval(modules[i], modules[i + 1])
+            modules[i + 1] = nn.Identity()
         i += 1
 
+    new_model.linear_stack = nn.Sequential(*modules)
     return new_model
 
 
