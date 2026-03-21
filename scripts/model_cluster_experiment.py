@@ -24,7 +24,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
-MAX_FAILURES = 3
+MAX_FAILURES = 10
 NUMBER_TRAINING_EPOCHS = 25
 NUMBER_TRAINING_RUNS = 10
 NUMBER_EVALUATE_RUNS = 10
