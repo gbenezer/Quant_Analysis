@@ -1,7 +1,8 @@
 # script for running an experiment on the cluster with H200 GPU
-from pathlib import Path
 import os
 import subprocess
+from pathlib import Path
+
 import pandas as pd
 import torch
 import torch.multiprocessing as mp
@@ -22,10 +23,11 @@ weight_only_ptq_dataframe_list = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 EXPERIMENT_DEVICE = "cluster"
+EXPERIMENT_NUMBER = 1
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
-MAX_FAILURES = 5
+MAX_FAILURES = 100
 NUMBER_TRAINING_EPOCHS = 25
 NUMBER_TRAINING_RUNS = 10
 NUMBER_EVALUATE_RUNS = 10
@@ -41,24 +43,30 @@ base_config = SimpleMLPConfig(
 SEED = None
 
 # dictionary to properly feed the
-DATALOADER_KWARGS = dict(
-    test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
-)
+DATALOADER_KWARGS = dict(test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128)
+
 
 def write_csvs():
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-        full_ptq_dataframe.to_csv(OUTPUT_PATH / f"full_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
+        full_ptq_dataframe.to_csv(
+            OUTPUT_PATH
+            / f"full_ptq_baseline_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
+        )
         print("Wrote full PTQ CSV.", flush=True)
     else:
         print("No full PTQ results collected.", flush=True)
 
     if weight_only_ptq_dataframe_list:
         weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / f"weight_only_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
+        weight_only_ptq_dataframe.to_csv(
+            OUTPUT_PATH
+            / f"weight_only_ptq_baseline_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
+        )
         print("Wrote weight-only PTQ CSV.", flush=True)
     else:
         print("No weight-only PTQ results collected.", flush=True)
+
 
 def cancel_slurm_job(reason: str):
     write_csvs()  # always save before cancelling
@@ -68,6 +76,7 @@ def cancel_slurm_job(reason: str):
         subprocess.run(["scancel", job_id])
     else:
         raise RuntimeError(f"No SLURM_JOB_ID found. Reason for cancel: {reason}")
+
 
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
@@ -98,12 +107,14 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=False,
                 split="train",
-                timeout=1200
+                timeout=1200,
             )
             if not train_loader_full_output:
                 eval_run_failed = True
             else:
-                train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
+                train_loader_full_df = ptq_results_to_dataframe(
+                    train_loader_full_output
+                )
                 train_loader_full_df = train_loader_full_df.assign(
                     train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
                 )
@@ -119,7 +130,7 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=False,
                 split="test",
-                timeout=1200
+                timeout=1200,
             )
             if not test_loader_full_output:
                 eval_run_failed = True
@@ -140,7 +151,7 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=True,
                 split="train",
-                timeout=1200
+                timeout=1200,
             )
             if not train_loader_weight_output:
                 eval_run_failed = True
@@ -163,33 +174,41 @@ if __name__ == "__main__":
                 batch_size=128,
                 weight_only=True,
                 split="test",
-                timeout=1200
+                timeout=1200,
             )
-            
+
             if not test_loader_weight_output:
                 eval_run_failed = True
             else:
-                test_loader_weight_df = ptq_results_to_dataframe(test_loader_weight_output)
+                test_loader_weight_df = ptq_results_to_dataframe(
+                    test_loader_weight_output
+                )
                 test_loader_weight_df = test_loader_weight_df.assign(
                     train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
                 )
                 weight_only_ptq_dataframe_list.append(test_loader_weight_df)
-                
+
             if eval_run_failed:
                 consecutive_failures += 1
                 if consecutive_failures >= MAX_FAILURES:
                     cancel_slurm_job("Too many consecutive worker failures")
             else:
                 consecutive_failures = 0
-    
+
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-        full_ptq_dataframe.to_csv(OUTPUT_PATH / f"full_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
+        full_ptq_dataframe.to_csv(
+            OUTPUT_PATH
+            / f"full_ptq_baseline_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
+        )
     else:
         print("No full PTQ results collected.")
 
     if weight_only_ptq_dataframe_list:
         weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / f"weight_only_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
+        weight_only_ptq_dataframe.to_csv(
+            OUTPUT_PATH
+            / f"weight_only_ptq_baseline_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
+        )
     else:
         print("No weight-only PTQ results collected.")
