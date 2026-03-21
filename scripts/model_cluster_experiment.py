@@ -21,6 +21,7 @@ full_ptq_dataframe_list = []
 weight_only_ptq_dataframe_list = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+EXPERIMENT_DEVICE = "cluster"
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -47,14 +48,14 @@ DATALOADER_KWARGS = dict(
 def write_csvs():
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-        full_ptq_dataframe.to_csv(OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv")
+        full_ptq_dataframe.to_csv(OUTPUT_PATH / f"full_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
         print("Wrote full PTQ CSV.", flush=True)
     else:
         print("No full PTQ results collected.", flush=True)
 
     if weight_only_ptq_dataframe_list:
         weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
+        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / f"weight_only_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
         print("Wrote weight-only PTQ CSV.", flush=True)
     else:
         print("No weight-only PTQ results collected.", flush=True)
@@ -75,7 +76,7 @@ if __name__ == "__main__":
         print(f"training model in training run {train_run + 1}")
         test_model = construct_mlp(
             config=base_config,
-            name=f"base_model_FP32_train_run_{train_run + 1}",
+            name=f"base_model_FP32_train_run_{train_run + 1}_{EXPERIMENT_DEVICE}",
             max_epochs=NUMBER_TRAINING_EPOCHS,
             seed=SEED,
         )
@@ -183,12 +184,12 @@ if __name__ == "__main__":
     
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-        full_ptq_dataframe.to_csv(OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv")
+        full_ptq_dataframe.to_csv(OUTPUT_PATH / f"full_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
     else:
         print("No full PTQ results collected.")
 
     if weight_only_ptq_dataframe_list:
         weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
+        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / f"weight_only_ptq_baseline_experiment_data_{EXPERIMENT_DEVICE}.csv")
     else:
         print("No weight-only PTQ results collected.")
