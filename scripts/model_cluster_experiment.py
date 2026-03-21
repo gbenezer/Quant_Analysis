@@ -15,7 +15,52 @@ from src.quant_analysis.model_architecture.superconductor_mlp_lightning import (
 )
 from src.quant_analysis.quantization.ptq.run_ptq import run_ptq_isolated
 
+# initialize global variables
+consecutive_failures = 0
+full_ptq_dataframe_list = []
+weight_only_ptq_dataframe_list = []
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
+OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+
+MAX_FAILURES = 3
+NUMBER_TRAINING_EPOCHS = 25
+NUMBER_TRAINING_RUNS = 10
+NUMBER_EVALUATE_RUNS = 10
+
+base_config = SimpleMLPConfig(
+    input_dim=81,
+    output_dim=1,
+    neurons_per_layer=[512, 256, 128],
+    activation="gelu",
+    use_batch_norm=True,
+)
+# Intentional to evaluate variance
+SEED = None
+
+# dictionary to properly feed the
+DATALOADER_KWARGS = dict(
+    test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
+)
+
+def write_csvs():
+    if full_ptq_dataframe_list:
+        full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
+        full_ptq_dataframe.to_csv(OUTPUT_PATH / "full_ptq_baseline_experiment_data.csv")
+        print("Wrote full PTQ CSV.", flush=True)
+    else:
+        print("No full PTQ results collected.", flush=True)
+
+    if weight_only_ptq_dataframe_list:
+        weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
+        weight_only_ptq_dataframe.to_csv(OUTPUT_PATH / "weight_only_ptq_baseline_experiment_data.csv")
+        print("Wrote weight-only PTQ CSV.", flush=True)
+    else:
+        print("No weight-only PTQ results collected.", flush=True)
+
 def cancel_slurm_job(reason: str):
+    write_csvs()  # always save before cancelling
     job_id = os.environ.get("SLURM_JOB_ID")
     if job_id:
         print(f"Cancelling SLURM job {job_id}: {reason}", flush=True)
@@ -23,40 +68,8 @@ def cancel_slurm_job(reason: str):
     else:
         raise RuntimeError(f"No SLURM_JOB_ID found. Reason for cancel: {reason}")
 
-
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
-
-    # Define globals for script
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
-    OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
-    
-    MAX_FAILURES = 3
-    NUMBER_TRAINING_EPOCHS = 25
-    NUMBER_TRAINING_RUNS = 10
-    NUMBER_EVALUATE_RUNS = 10
-
-    base_config = SimpleMLPConfig(
-        input_dim=81,
-        output_dim=1,
-        neurons_per_layer=[512, 256, 128],
-        activation="gelu",
-        use_batch_norm=True,
-    )
-    # Intentional to evaluate variance
-    SEED = None
-
-    # dictionary to properly feed the
-    DATALOADER_KWARGS = dict(
-        test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128
-    )
-
-    
-    consecutive_failures = 0
-    full_ptq_dataframe_list = []
-    weight_only_ptq_dataframe_list = []
 
     for train_run in range(NUMBER_TRAINING_RUNS):
         print(f"training model in training run {train_run + 1}")
@@ -69,6 +82,7 @@ if __name__ == "__main__":
         test_model.share_memory()  # required for passing model to subprocess
 
         for eval_run in range(NUMBER_EVALUATE_RUNS):
+            eval_run_failed = False
             print(
                 f"getting evaluation data for training run {train_run + 1}, evaluation run {eval_run + 1}"
             )
@@ -86,18 +100,13 @@ if __name__ == "__main__":
                 timeout=1200
             )
             if not train_loader_full_output:
-                consecutive_failures += 1
-                if consecutive_failures >= MAX_FAILURES:
-                    cancel_slurm_job("Too many consecutive worker failures")
-                continue
+                eval_run_failed = True
             else:
-                consecutive_failures = 0  # reset on success
-            
-            train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
-            train_loader_full_df = train_loader_full_df.assign(
-                train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
-            )
-            full_ptq_dataframe_list.append(train_loader_full_df)
+                train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
+                train_loader_full_df = train_loader_full_df.assign(
+                    train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
+                )
+                full_ptq_dataframe_list.append(train_loader_full_df)
 
             print(
                 "running ptq with size estimation on all configurations, test dataset"
@@ -112,18 +121,13 @@ if __name__ == "__main__":
                 timeout=1200
             )
             if not test_loader_full_output:
-                consecutive_failures += 1
-                if consecutive_failures >= MAX_FAILURES:
-                    cancel_slurm_job("Too many consecutive worker failures")
-                continue
+                eval_run_failed = True
             else:
-                consecutive_failures = 0  # reset on success
-                
-            test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
-            test_loader_full_df = test_loader_full_df.assign(
-                train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
-            )
-            full_ptq_dataframe_list.append(test_loader_full_df)
+                test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
+                test_loader_full_df = test_loader_full_df.assign(
+                    train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
+                )
+                full_ptq_dataframe_list.append(test_loader_full_df)
 
             print(
                 "running ptq, weight only configurations, actual size measurement, train set"
@@ -138,20 +142,15 @@ if __name__ == "__main__":
                 timeout=1200
             )
             if not train_loader_weight_output:
-                consecutive_failures += 1
-                if consecutive_failures >= MAX_FAILURES:
-                    cancel_slurm_job("Too many consecutive worker failures")
-                continue
+                eval_run_failed = True
             else:
-                consecutive_failures = 0  # reset on success
-                
-            train_loader_weight_df = ptq_results_to_dataframe(
-                train_loader_weight_output
-            )
-            train_loader_weight_df = train_loader_weight_df.assign(
-                train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
-            )
-            weight_only_ptq_dataframe_list.append(train_loader_weight_df)
+                train_loader_weight_df = ptq_results_to_dataframe(
+                    train_loader_weight_output
+                )
+                train_loader_weight_df = train_loader_weight_df.assign(
+                    train_run=(train_run + 1), eval_run=(eval_run + 1), split="train"
+                )
+                weight_only_ptq_dataframe_list.append(train_loader_weight_df)
 
             print(
                 "running ptq, weight only configurations, actual size measurement, test set"
@@ -167,17 +166,20 @@ if __name__ == "__main__":
             )
             
             if not test_loader_weight_output:
+                eval_run_failed = True
+            else:
+                test_loader_weight_df = ptq_results_to_dataframe(test_loader_weight_output)
+                test_loader_weight_df = test_loader_weight_df.assign(
+                    train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
+                )
+                weight_only_ptq_dataframe_list.append(test_loader_weight_df)
+                
+            if eval_run_failed:
                 consecutive_failures += 1
                 if consecutive_failures >= MAX_FAILURES:
                     cancel_slurm_job("Too many consecutive worker failures")
-                continue
             else:
-                consecutive_failures = 0  # reset on success
-            test_loader_weight_df = ptq_results_to_dataframe(test_loader_weight_output)
-            test_loader_weight_df = test_loader_weight_df.assign(
-                train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
-            )
-            weight_only_ptq_dataframe_list.append(test_loader_weight_df)
+                consecutive_failures = 0
     
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
