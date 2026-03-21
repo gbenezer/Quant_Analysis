@@ -1,6 +1,8 @@
 # script for running an experiment on the cluster with H200 GPU
 import os
+import signal
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -44,6 +46,15 @@ SEED = None
 
 # dictionary to properly feed the
 DATALOADER_KWARGS = dict(test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128)
+
+
+def _sigterm_handler(signum, frame):
+    print("SIGTERM received — flushing CSVs before exit", flush=True)
+    write_csvs()
+    sys.exit(0)
+
+
+signal.signal(signal.SIGTERM, _sigterm_handler)
 
 
 def write_csvs():
