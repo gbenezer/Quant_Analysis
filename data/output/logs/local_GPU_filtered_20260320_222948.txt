@@ -1,0 +1,57 @@
+--- Filtered log: local_GPU (20260320_222948) ---
+--- Pattern: Skipping|CUDA error|Worker|cutlass|TMA|INVALID_GRAPH|cudaError|IllegalInstruction|RuntimeError|AssertionError|Traceback|Error:|Exception|Wrote|No .* results collected|Aborting|Too many ---
+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpmxq46org/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpsrr0vulc/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpp6k14eeg/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpgczs4mlc/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmprcgmvh81/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmp3uu0nap7/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpvgalfan7/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmppuz75fhq/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmp4qsild0t/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpir_4u4ei/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpkgiqi1dc/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmp_dgjrxvz/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpn01x_97_/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpm2w3dwld/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpftxo8rap/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpar1qyo6g/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8DynamicActivationFloat8WeightConfig: Float8 dynamic activation quantization is only supported on CUDA>=8.9 and MI300+
+Skipping Float8StaticActivationFloat8WeightConfig: torch._scaled_mm is only supported on CUDA devices with compute capability >= 9.0 or 8.9, or ROCm MI300+
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpcqbi1r5u/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
+Skipping Float8WeightOnlyConfig ONNX evaluation: [ONNXRuntimeError] : 10 : INVALID_GRAPH : Load model from /tmp/tmpvijbyt04/temp_model.onnx failed:This is an invalid model. Type Error: Type 'tensor(float8e4m3fn)' of input parameter (t) of operator (Cast) in node (node__to_copy) is invalid.
