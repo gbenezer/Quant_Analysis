@@ -7,7 +7,7 @@ def ptq_results_to_dataframe(results):
 
     The input `results` dictionary is expected to contain one entry per quantization configuration.
 
-    This function builds a wide DataFrame with one row per configuration and one column per metric. Then, it reshapes 
+    This function builds a wide DataFrame with one row per configuration and one column per metric. Then, it reshapes
     the DataFrame into long format so each metric becomes its own row.
 
     Params:
@@ -67,7 +67,7 @@ def ptq_results_to_dataframe(results):
     )
     decomposed_metric_df.columns = ["runtime", "relative_metric", "base_metric"]
 
-     # Convert the metric type into a boolean flag for easier filtering.
+    # Convert the metric type into a boolean flag for easier filtering.
     decomposed_metric_df["relative"] = (
         decomposed_metric_df["relative_metric"] == "relative"
     )

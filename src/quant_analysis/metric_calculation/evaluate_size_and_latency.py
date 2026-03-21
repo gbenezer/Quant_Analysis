@@ -101,7 +101,7 @@ def evaluate_onnx_latency_and_size(
             input_names=["input"],
             output_names=["output"],
             opset_version=18,
-            dynamo=True
+            dynamo=True,
         )
 
         # model size
@@ -198,8 +198,7 @@ def evaluate_pytorch_latency_and_estimate_size(
         model = copy.deepcopy(model).to(device)
     except Exception:
         model = model.to(device)  # fall back to in-place move without copy
-        
-    
+
     sample_input = sample_input.to(device, dtype=input_dtype)
 
     model.eval()
