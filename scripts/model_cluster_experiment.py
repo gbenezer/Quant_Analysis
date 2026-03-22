@@ -1,8 +1,4 @@
 # script for running an experiment on the cluster with H200 GPU
-import os
-import signal
-import subprocess
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -29,7 +25,6 @@ EXPERIMENT_NUMBER = 1
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
-MAX_FAILURES = 100
 NUMBER_TRAINING_EPOCHS = 25
 NUMBER_TRAINING_RUNS = 10
 NUMBER_EVALUATE_RUNS = 10
@@ -46,15 +41,6 @@ SEED = None
 
 # dictionary to properly feed the
 DATALOADER_KWARGS = dict(test_fraction=0.2, random_seed=SEED, n_workers=4, batch_n=128)
-
-
-def _sigterm_handler(signum, frame):
-    print("SIGTERM received — flushing CSVs before exit", flush=True)
-    write_csvs()
-    sys.exit(0)
-
-
-signal.signal(signal.SIGTERM, _sigterm_handler)
 
 
 def write_csvs():
@@ -79,16 +65,6 @@ def write_csvs():
         print("No weight-only PTQ results collected.", flush=True)
 
 
-def cancel_slurm_job(reason: str):
-    write_csvs()  # always save before cancelling
-    job_id = os.environ.get("SLURM_JOB_ID")
-    if job_id:
-        print(f"Cancelling SLURM job {job_id}: {reason}", flush=True)
-        subprocess.run(["scancel", job_id])
-    else:
-        raise RuntimeError(f"No SLURM_JOB_ID found. Reason for cancel: {reason}")
-
-
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
 
@@ -103,7 +79,6 @@ if __name__ == "__main__":
         test_model.share_memory()  # required for passing model to subprocess
 
         for eval_run in range(NUMBER_EVALUATE_RUNS):
-            eval_run_failed = False
             print(
                 f"getting evaluation data for training run {train_run + 1}, evaluation run {eval_run + 1}"
             )
@@ -120,9 +95,7 @@ if __name__ == "__main__":
                 split="train",
                 timeout=1200,
             )
-            if not train_loader_full_output:
-                eval_run_failed = True
-            else:
+            if train_loader_full_output:
                 train_loader_full_df = ptq_results_to_dataframe(
                     train_loader_full_output
                 )
@@ -143,9 +116,7 @@ if __name__ == "__main__":
                 split="test",
                 timeout=1200,
             )
-            if not test_loader_full_output:
-                eval_run_failed = True
-            else:
+            if test_loader_full_output:
                 test_loader_full_df = ptq_results_to_dataframe(test_loader_full_output)
                 test_loader_full_df = test_loader_full_df.assign(
                     train_run=(train_run + 1), eval_run=(eval_run + 1), split="test"
@@ -164,9 +135,7 @@ if __name__ == "__main__":
                 split="train",
                 timeout=1200,
             )
-            if not train_loader_weight_output:
-                eval_run_failed = True
-            else:
+            if train_loader_weight_output:
                 train_loader_weight_df = ptq_results_to_dataframe(
                     train_loader_weight_output
                 )
@@ -188,9 +157,7 @@ if __name__ == "__main__":
                 timeout=1200,
             )
 
-            if not test_loader_weight_output:
-                eval_run_failed = True
-            else:
+            if test_loader_weight_output:
                 test_loader_weight_df = ptq_results_to_dataframe(
                     test_loader_weight_output
                 )
@@ -199,12 +166,9 @@ if __name__ == "__main__":
                 )
                 weight_only_ptq_dataframe_list.append(test_loader_weight_df)
 
-            if eval_run_failed:
-                consecutive_failures += 1
-                if consecutive_failures >= MAX_FAILURES:
-                    cancel_slurm_job("Too many consecutive worker failures")
-            else:
-                consecutive_failures = 0
+        # Write checkpoint after every training run completes
+        print(f"Checkpointing after training run {train_run + 1}", flush=True)
+        write_csvs()
 
     if full_ptq_dataframe_list:
         full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
