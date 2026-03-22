@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 # global directory definition
 OUTPUT_DATA_PATH = Path.cwd() / "data" / "output" / "csv"
@@ -94,12 +95,29 @@ weight_df = convert_str_to_categorical(weight_df)
 # only weight-only configs exist in this dataframe
 weight_df = weight_df.drop("weight_only", axis=1)
 
+# figure size template
+font_size_layout = go.Layout(
+    title=dict(font=dict(size=36)),
+    legend=dict(font=dict(size=30)),
+    xaxis=dict(
+        title=dict(font=dict(size=26)),
+        tickfont=dict(size=22),
+    ),
+    yaxis=dict(
+        title=dict(font=dict(size=26)),
+        tickfont=dict(size=22),
+    ),
+)
+
+font_size_template = dict(layout=font_size_layout)
+
 # graphs
 relative_mae_full_df = full_df.query(expr="base_metric == 'MAE' & relative")
 mae_violin = px.violin(data_frame=relative_mae_full_df,
                        x="device",
                        y="value",
                        color="location",
+                       color_discrete_sequence=px.colors.qualitative.D3,
                        facet_col="split",
                        points="all",
                        labels=dict(
@@ -110,4 +128,9 @@ mae_violin = px.violin(data_frame=relative_mae_full_df,
                        range_y = [0.99, 1.02],
                        box=False,
                        title="No Meaningful Differences In Error Exist Between Device and Location")
+mae_violin.update_layout(
+    template=font_size_template,
+    margin=dict(l=120)
+)
+mae_violin.update_annotations(font=dict(size=26))
 mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_location_device.html")
