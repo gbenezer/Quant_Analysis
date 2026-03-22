@@ -99,4 +99,15 @@ relative_mae_full_df = full_df.query(expr="base_metric == 'MAE' & relative")
 mae_violin = px.violin(data_frame=relative_mae_full_df,
                        x="device",
                        y="value",
-                       color="location")
+                       color="location",
+                       facet_col="split",
+                       points="all",
+                       labels=dict(
+                           device="Device",
+                           value="Mean Absolute Error, Relative to Baseline",
+                           location="Location"
+                       ),
+                       range_y = [0.99, 1.02],
+                       box=False,
+                       title="No Meaningful Differences In Error Exist Between Device and Location")
+mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_location_device.html")
