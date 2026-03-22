@@ -28,30 +28,29 @@ CLUSTER_GPU_WEIGHT_ONLY_RESULT_PATH = (
     OUTPUT_DATA_PATH / "weight_only_ptq_baseline_experiment_1_data_cluster.csv"
 )
 
-# importing the dataframes and adding disambiguating  variables
+# importing the dataframes and adding disambiguating variables
 local_cpu_full_df = pd.read_csv(LOCAL_CPU_FULL_RESULT_PATH, index_col=0).assign(
-    device="cpu", location="local"
+    device="CPU", location="Local"
 )
 local_gpu_full_df = pd.read_csv(LOCAL_CPU_FULL_RESULT_PATH, index_col=0).assign(
-    device="gpu", location="local"
+    device="GPU", location="Local"
 )
 cluster_gpu_full_df = pd.read_csv(CLUSTER_GPU_FULL_RESULT_PATH, index_col=0).assign(
-    device="gpu", location="cluster"
+    device="GPU", location="Cluster"
 )
 
 local_cpu_weight_df = pd.read_csv(
     LOCAL_CPU_WEIGHT_ONLY_RESULT_PATH, index_col=0
-).assign(device="cpu", location="local")
+).assign(device="CPU", location="Local")
 local_gpu_weight_df = pd.read_csv(
     LOCAL_GPU_WEIGHT_ONLY_RESULT_PATH, index_col=0
-).assign(device="gpu", location="local")
+).assign(device="GPU", location="Local")
 cluster_gpu_weight_df = pd.read_csv(
     CLUSTER_GPU_WEIGHT_ONLY_RESULT_PATH, index_col=0
-).assign(device="gpu", location="cluster")
+).assign(device="GPU", location="Cluster")
 
 # combining the dataframes
 full_df = pd.concat([local_cpu_full_df, local_gpu_full_df, cluster_gpu_full_df])
-
 weight_df = pd.concat([local_cpu_weight_df, local_gpu_weight_df, cluster_gpu_weight_df])
 
 # processing the dataframes
@@ -95,5 +94,9 @@ weight_df = convert_str_to_categorical(weight_df)
 # only weight-only configs exist in this dataframe
 weight_df = weight_df.drop("weight_only", axis=1)
 
-print(full_df.info())
-print(weight_df.info())
+# graphs
+relative_mae_full_df = full_df.query(expr="base_metric == 'MAE' & relative")
+mae_violin = px.violin(data_frame=relative_mae_full_df,
+                       x="device",
+                       y="value",
+                       color="location")
