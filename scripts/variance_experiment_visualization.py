@@ -84,6 +84,16 @@ def convert_str_to_categorical(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop(labels=["dynamic_calibration",
                          "metric",
                          "bits_per_weight"], axis=1)
+    
+    df["config_name"] = df["config_name"].cat.rename_categories({
+        "Int8WeightOnlyConfig": "Int8,<br>Weight Only",
+        "Float8WeightOnlyConfig": "Float8,<br>Weight Only",
+        "Float8DynamicActivationFloat8WeightConfig": "Float8,<br>Weight and Activation,<br>Dynamic",
+        "Float8StaticActivationFloat8WeightConfig": "Float8,<br>Weight and Activation,<br>Static",
+        "Int8DynamicActivationInt8WeightConfig": "Int8,<br>Weight and Activation,<br>Dynamic",
+        "Float8DynamicActivationInt4WeightConfig": "Int4<br>Weight,<br>Float8 Activation",
+        "Int4WeightOnlyConfig": "Int4,<br>Weight Only"
+    })
 
     return df
 
@@ -112,25 +122,69 @@ font_size_layout = go.Layout(
 font_size_template = dict(layout=font_size_layout)
 
 # graphs
-relative_mae_full_df = full_df.query(expr="base_metric == 'MAE' & relative")
-mae_violin = px.violin(data_frame=relative_mae_full_df,
-                       x="device",
+
+relative_mae_full_test_only = full_df.query(expr="base_metric == 'MAE' & relative & split == 'test'")
+mae_violin = px.violin(data_frame=relative_mae_full_test_only,
+                       x="location",
                        y="value",
-                       color="location",
+                       color="device",
                        color_discrete_sequence=px.colors.qualitative.D3,
-                       facet_col="split",
                        points="all",
                        labels=dict(
                            device="Device",
-                           value="Mean Absolute Error, Relative to Baseline",
+                           value="Mean Absolute Test Error, Relative to Baseline",
                            location="Location"
                        ),
                        range_y = [0.99, 1.02],
                        box=False,
-                       title="No Meaningful Differences In Error Exist Between Device and Location")
+                       title="No Meaningful Differences In Test Error Exist Between Device and Location")
 mae_violin.update_layout(
     template=font_size_template,
     margin=dict(l=120)
 )
 mae_violin.update_annotations(font=dict(size=26))
-mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_location_device.html")
+mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_location_device_test.html")
+
+
+mae_violin = px.violin(data_frame=relative_mae_full_test_only,
+                       x="precision",
+                       y="value",
+                       color="device",
+                       color_discrete_sequence=px.colors.qualitative.D3,
+                       points="all",
+                       labels=dict(
+                           device="Device",
+                           value="Mean Absolute Test Error, Relative to Baseline",
+                           precision="Data Type"
+                       ),
+                       range_y = [0.99, 1.02],
+                       box=False,
+                       title="Both Available Precisions Perform Similarly in Test Error")
+mae_violin.update_layout(
+    template=font_size_template,
+    margin=dict(l=120)
+)
+mae_violin.update_annotations(font=dict(size=26))
+mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_precision_device_test.html")
+
+mae_violin = px.violin(data_frame=relative_mae_full_test_only,
+                       x="config_name",
+                       y="value",
+                       color="device",
+                       color_discrete_sequence=px.colors.qualitative.D3,
+                       points="all",
+                       labels=dict(
+                           device="Device",
+                           value="Mean Absolute Test Error, Relative to Baseline",
+                           config_name="PTQ Configuration"
+                       ),
+                       range_y = [0.99, 1.02],
+                       box=False,
+                       title="PTQ Approaches Differ With Respect to Test Error")
+mae_violin.update_layout(
+    template=font_size_template,
+    margin=dict(l=120, b=120)
+)
+mae_violin.update_layout(xaxis_tickfont=dict(size=16))
+mae_violin.update_annotations(font=dict(size=26))
+mae_violin.write_html(OUTPUT_FIGURE_PATH / "relative_MAE_config_device_test.html")
