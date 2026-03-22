@@ -173,4 +173,7 @@ if __name__ == "__main__":
         activation="relu",
         use_batch_norm=True,
     )
-    construct_mlp(config=base_config, name="base_model_FP32", max_epochs=NUMBER_EPOCHS)
+    output_mlp = construct_mlp(
+        config=base_config, name="base_model_FP32_smoke_test", max_epochs=NUMBER_EPOCHS
+    )
+    print(output_mlp)
