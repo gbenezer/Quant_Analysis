@@ -1,0 +1,10 @@
+config: !!python/object:src.quant_analysis.model_architecture.model_configs.SimpleMLPConfig
+  activation: relu
+  input_dim: 81
+  neurons_per_layer:
+  - 512
+  - 256
+  - 128
+  output_dim: 1
+  use_batch_norm: true
+learning_rate: 0.001

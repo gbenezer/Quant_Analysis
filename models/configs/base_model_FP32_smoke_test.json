@@ -1,0 +1,11 @@
+{
+    "input_dim": 81,
+    "output_dim": 1,
+    "neurons_per_layer": [
+        512,
+        256,
+        128
+    ],
+    "activation": "relu",
+    "use_batch_norm": true
+}
