@@ -23,17 +23,17 @@ weight_only_ptq_dataframe_list = []
 device = "cpu"
 local_abort = False
 
-EXPERIMENT_DEVICE = "CPU"
+EXPERIMENT_DEVICE = "CPU_EXP_2"
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
-MAX_FAILURES = 5
+MAX_FAILURES = 100
 NUMBER_TRAINING_EPOCHS = 25
-NUMBER_TRAINING_RUNS = 3
-NUMBER_EVALUATE_RUNS = 3
-TIMEOUT = 300
-RUNS = 100
-WARMUP = 10
+NUMBER_TRAINING_RUNS = 10
+NUMBER_EVALUATE_RUNS = 10
+TIMEOUT = 1200
+RUNS = 500
+WARMUP = 50
 
 
 base_config = SimpleMLPConfig(
