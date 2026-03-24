@@ -6,9 +6,16 @@ from typing import Callable
 
 # dataclass definition section
 
+"""
+Instantiate instances of these classes to keep architecture parameters constant across experiments to perform 
+ablation studies on different types of quantization. 
+"""
 
 @dataclass
 class SimpleMLPConfig:
+    """
+    Cookie-Cutter Template for creating MLPs.
+    """
     input_dim: int
     output_dim: int
     neurons_per_layer: list[int]
@@ -18,6 +25,9 @@ class SimpleMLPConfig:
 
 @dataclass
 class TransformerEncoderDecoderForecasterConfig:
+    """
+    WIP Transformers
+    """
     input_dim: int  # Raw feature dimension
     model_dim: int  # Transformer hidden dimension
     n_heads_encoder: int  # Attention heads per encoder layer
