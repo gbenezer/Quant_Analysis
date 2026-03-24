@@ -11,7 +11,10 @@ import torch
 import torch.nn as nn
 
 
-# helper functions
+# ================
+# Helper Functions
+# ================
+
 def measure_latency_onnx(
     session: ort.InferenceSession,
     input_name: str,
@@ -19,6 +22,22 @@ def measure_latency_onnx(
     runs: int = 500,
     warmup: int = 50,
 ):
+    """
+    Measure inference latency for an ONNX model.
+
+    Runs a number of warmup iterations to stabilize performance, then
+    measures execution time over multiple runs and returns latency statistics.
+
+    Params:
+        session (ort.InferenceSession): ONNX Runtime session used for inference.
+        input_name (str): Name of the model input.
+        x (np.ndarray): Input data for inference.
+        runs (int, optional): Number of measured runs.
+        warmup (int, optional): Number of warmup runs before measurement.
+
+    Returns:
+        Tuple[float, float, float]: Median, 95th percentile, and 99th percentile latencies.
+    """
 
     # warmup
     for _ in range(warmup):
@@ -42,6 +61,16 @@ def measure_latency_onnx(
 
 # size estimation compatible with all PTQ configurations
 def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
+    """
+    Estimate model size based on quantization.
+
+    Params:
+        model (nn.Module): PyTorch model.
+        bits_per_weight (int): Number of bits used per weight.
+
+    Returns:
+        float: Estimated model size in bytes.
+    """
     total_weights = sum(p.numel() for p in model.parameters())
     # returns size in bytes as that is the native measure of size
     return total_weights * bits_per_weight / 8
@@ -52,6 +81,16 @@ def assess_relative_performance(
     quantized_model_performance: Tuple[Union[int, float], float, float, float],
     base_model_performance: Tuple[Union[int, float], float, float, float],
 ) -> Tuple[float, float, float, float]:
+    """
+    Compare quantized model performance relative to a baseline model.
+
+    Params: 
+        quantized_model_performance (Tuple): (size, median_latency, p95_latency, p99_latency) for quantized model.
+        base_model_performance (Tuple): Same metrics for baseline model.
+
+    Returns:
+        Tuple[float, float, float, float]: Relative size and latency metrics..
+    """
 
     # model size
     quantized_model_size_float = float(quantized_model_performance[0])
@@ -84,6 +123,20 @@ def evaluate_onnx_latency_and_size(
     warmup: int = 50,
     input_dtype: torch.dtype = torch.float32,
 ):
+    """
+    Export a PyTorch model to ONNX and evaluate its latency and size.
+
+    Params:
+        model (nn.Module): PyTorch model to evaluate.
+        sample_input (torch.Tensor): Example input used for export and inference.
+        device (str or torch.device): Device to run evaluation on.
+        runs (int, optional): Number of inference runs.
+        warmup (int, optional): Number of warmup runs. 
+        input_dtype (torch.dtype, optional):Data type for inputs. 
+
+    Returns:
+        Tuple[int, float, float, float]: Model size in bytes, median latency, p95 latency, p99 latency.
+    """
 
     model = copy.deepcopy(model)
     model.eval()
@@ -135,6 +188,12 @@ def evaluate_pt2_latency_and_size(
     warmup: int = 50,
     input_dtype: torch.dtype = torch.float32,
 ) -> Tuple[int, float, float, float]:
+    """
+    Evaluate latency and size using PyTorch 2 export format.
+
+    Returns:
+        model size (serialized) and latency statistics.
+    """
 
     model.eval()
 
@@ -193,6 +252,20 @@ def evaluate_pytorch_latency_and_estimate_size(
     warmup: int = 50,
     input_dtype: torch.dtype = torch.float32,
 ):
+    """
+    Export a PyTorch model to ONNX and evaluate its latency and size.
+
+    Params:
+        model (nn.Module): PyTorch model to evaluate.
+        sample_input (torch.Tensor): Example input used for export and inference.
+        device (str or torch.device): Device to run evaluation on.
+        runs (int, optional): Number of inference runs. Default is 200.
+        warmup (int, optional): Number of warmup runs. Default is 50.
+        input_dtype (torch.dtype, optional): Data type for inputs. Default is float32.
+
+    Returns:
+        Tuple[int, float, float, float]: Model size in bytes, median latency, p95 latency, p99 latency.
+    """
 
     try:
         model = copy.deepcopy(model).to(device)
