@@ -1,10 +1,7 @@
-# script for running an experiment on the cluster with H200 GPU
-import os
-import subprocess
+# script for running an experiment on a local CPU
 from pathlib import Path
 
 import pandas as pd
-import torch
 import torch.multiprocessing as mp
 
 from src.quant_analysis.data_processing.ptq_result_to_dataframe import (

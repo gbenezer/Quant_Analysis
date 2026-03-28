@@ -1,6 +1,4 @@
-# script for running an experiment on the cluster with H200 GPU
-import os
-import subprocess
+# script for running an experiment on a local GPU
 from pathlib import Path
 
 import pandas as pd
