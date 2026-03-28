@@ -10,10 +10,10 @@ import onnxruntime as ort
 import torch
 import torch.nn as nn
 
-
 # ================
 # Helper Functions
 # ================
+
 
 def measure_latency_onnx(
     session: ort.InferenceSession,
@@ -84,7 +84,7 @@ def assess_relative_performance(
     """
     Compare quantized model performance relative to a baseline model.
 
-    Params: 
+    Params:
         quantized_model_performance (Tuple): (size, median_latency, p95_latency, p99_latency) for quantized model.
         base_model_performance (Tuple): Same metrics for baseline model.
 
@@ -131,8 +131,8 @@ def evaluate_onnx_latency_and_size(
         sample_input (torch.Tensor): Example input used for export and inference.
         device (str or torch.device): Device to run evaluation on.
         runs (int, optional): Number of inference runs.
-        warmup (int, optional): Number of warmup runs. 
-        input_dtype (torch.dtype, optional):Data type for inputs. 
+        warmup (int, optional): Number of warmup runs.
+        input_dtype (torch.dtype, optional):Data type for inputs.
 
     Returns:
         Tuple[int, float, float, float]: Model size in bytes, median latency, p95 latency, p99 latency.

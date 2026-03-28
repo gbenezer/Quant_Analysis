@@ -119,9 +119,9 @@ def construct_mlp(
     batch_n: int = 64,
 ):
     """
-    Input: Takes the config provided (via model_configs.py), adds name to id the type of quantization performed, 
+    Input: Takes the config provided (via model_configs.py), adds name to id the type of quantization performed,
     adds training hyperparameters, and trains the model.
-    
+
     Args:
         config: The configuration for the MLP model.
         name: id to reference the model

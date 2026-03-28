@@ -3,7 +3,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
-def evaluate_mae( model: nn.Module, dataloader: DataLoader, input_dtype: torch.dtype = torch.float32):
+def evaluate_mae(
+    model: nn.Module, dataloader: DataLoader, input_dtype: torch.dtype = torch.float32
+):
     """
     Computers the Mean Absolute Error (MAE) of a model over a dataset.
 
@@ -16,7 +18,7 @@ def evaluate_mae( model: nn.Module, dataloader: DataLoader, input_dtype: torch.d
         dataloader (DataLoader): An iterable DataLoader providing batches of (input, target) pairs.
         input_dtype (torch.dtype, optional): The data type to which input tensors are cast before being passed to
             the model. Default is torch.float32.
-    Returns: 
+    Returns:
         float: MAE across all samples in the dataset.
     """
 
