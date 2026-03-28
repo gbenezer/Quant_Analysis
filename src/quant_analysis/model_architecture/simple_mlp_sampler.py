@@ -169,7 +169,7 @@ if __name__ == "__main__":
     test_dataframe = generate_mlp_sample_dataframe(
         number_samples=32, layer_bounds=example_layer_bound_list, random_seed=32
     )
-    test_configs = generate_mlp_config_list_from_dataframe(df=test_dataframe,
-                                                           input_dim=81,
-                                                           output_dim=1)
+    test_configs = generate_mlp_config_list_from_dataframe(
+        df=test_dataframe, input_dim=81, output_dim=1
+    )
     print(test_configs)
