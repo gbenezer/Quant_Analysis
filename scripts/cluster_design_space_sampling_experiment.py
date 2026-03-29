@@ -24,6 +24,7 @@ weight_only_ptq_dataframe_list = []
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 EXPERIMENT_DEVICE = "Cluster"
+EXPERIMENT_NUMBER = 1
 OUTPUT_PATH = Path.cwd() / "data" / "output" / "csv"
 OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -32,11 +33,15 @@ NUMBER_EVALUATE_RUNS = 3
 TIMEOUT = 1200
 RUNS = 500
 WARMUP = 50
-NUMBER_CONFIGS = 128
+NUMBER_CONFIGS = 64
 BATCH_SIZE = 128
 
-# Evaluating performance, so seed needs to be set
-SEED = 32
+# # Evaluating performance, so seed needs to be set
+# SEED = 32
+
+# Generating multiple data across multiple V100 runs,
+# so need configurational independence
+SEED = None
 
 # Construct model config dataframe, using 3 hidden layers
 model_ID_list = [f"model_{i + 1}" for i in range(NUMBER_CONFIGS)]
@@ -78,7 +83,7 @@ def write_csvs():
         )
         full_ptq_experiment_df.to_csv(
             OUTPUT_PATH
-            / f"full_ptq_config_sampling_experiment_data_{EXPERIMENT_DEVICE}.csv"
+            / f"full_ptq_config_sampling_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
         )
     else:
         print("No full PTQ results collected.", flush=True)
@@ -95,7 +100,7 @@ def write_csvs():
         )
         weight_only_ptq_experiment_df.to_csv(
             OUTPUT_PATH
-            / f"weight_only_ptq_config_sampling_experiment_data_{EXPERIMENT_DEVICE}.csv"
+            / f"weight_only_ptq_config_sampling_experiment_{EXPERIMENT_NUMBER}_data_{EXPERIMENT_DEVICE}.csv"
         )
     else:
         print("No weight-only PTQ results collected.", flush=True)
