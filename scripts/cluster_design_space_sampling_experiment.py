@@ -100,9 +100,10 @@ def write_csvs():
     else:
         print("No weight-only PTQ results collected.", flush=True)
 
+
 if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
-    
+
     for config_ID, config in model_configs.items():
         test_config_model = construct_mlp(
             config=config,
@@ -113,7 +114,6 @@ if __name__ == "__main__":
         test_config_model.share_memory()  # required for passing model to subprocess
 
         for eval_run in range(NUMBER_EVALUATE_RUNS):
-            
             config_full_output_dict = run_ptq_isolated(
                 base_model=test_config_model,
                 dataloader_kwargs=DATALOADER_KWARGS,
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                     model_ID=config_ID, eval_run=(eval_run + 1), weight_only=False
                 )
                 full_ptq_dataframe_list.append(config_full_output_df)
-            
+
             config_weight_only_output_dict = run_ptq_isolated(
                 base_model=test_config_model,
                 dataloader_kwargs=DATALOADER_KWARGS,
@@ -151,7 +151,7 @@ if __name__ == "__main__":
                     model_ID=config_ID, eval_run=(eval_run + 1), weight_only=True
                 )
                 weight_only_ptq_dataframe_list.append(config_weight_only_output_df)
-                
+
         # Write checkpoint after every training run completes
         print(f"Checkpointing after training and evaluating {config_ID}", flush=True)
         write_csvs()
