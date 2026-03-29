@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple
 
 import pandas as pd
 import torch
-from .model_configs import SimpleMLPConfig
 from torch.quasirandom import SobolEngine
 
 from .model_configs import SimpleMLPConfig
