@@ -61,5 +61,5 @@ run_experiment() {
 # ---------------------------------------------------------------------------
 # Run GPU design experiment
 # ---------------------------------------------------------------------------
-run_experiment "design_space_sampling_experiment.py" "GPU Config Design Experiment"
+run_experiment "design_space_sampling_experiment.py" "GPU_Config_Design_Experiment"
 echo "Logs written to: ${LOG_DIR}"
