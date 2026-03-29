@@ -117,6 +117,7 @@ def construct_mlp(
     seed: int | None = 42,
     n_workers: int = 4,
     batch_n: int = 64,
+    save_output: bool = False,
 ):
     """
     Input: Takes the config provided (via model_configs.py), adds name to id the type of quantization performed,
@@ -142,13 +143,16 @@ def construct_mlp(
     mlp = SuperconductorLightning(config=config, learning_rate=learning_rate)
     mlp.compile()
 
-    trainer = Trainer(
-        logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
-        callbacks=[
-            ModelCheckpoint(checkpoint_directory, filename=name),
-        ],
-        max_epochs=max_epochs,
-    )
+    if save_output:
+        trainer = Trainer(
+            logger=CSVLogger((logging_directory / name), name=(name + "_csv_log")),
+            callbacks=[
+                ModelCheckpoint(checkpoint_directory, filename=name),
+            ],
+            max_epochs=max_epochs,
+        )
+    else:
+        trainer = Trainer(max_epochs=max_epochs)
 
     trainer.fit(
         model=mlp,
@@ -159,15 +163,16 @@ def construct_mlp(
 
     mlp.model.eval()
 
-    config_dict = asdict(mlp.config)
-    state_dict = mlp.model.state_dict()
+    if save_output:
+        config_dict = asdict(mlp.config)
+        state_dict = mlp.model.state_dict()
 
-    torch.save(
-        {"config": config_dict, "state_dict": state_dict},
-        (state_dict_directory / f"{name}.pth"),
-    )
+        torch.save(
+            {"config": config_dict, "state_dict": state_dict},
+            (state_dict_directory / f"{name}.pth"),
+        )
 
-    save_model_config(config=mlp.config, path=(config_directory / f"{name}.json"))
+        save_model_config(config=mlp.config, path=(config_directory / f"{name}.json"))
 
     return copy.deepcopy(mlp.model)
 
