@@ -12,11 +12,9 @@ class ContinuousWavenumberEncoding(nn.Module):
         This module extends standard positional encoding to continuous scalar
         inputs by mapping normalized values to sinusoidal embeddings.
 
-        Args:
+        Params:
             d_model (int): Dimensionality of the output encoding.
-
             wn_min (float): Minimum wavenumber used for normalization.
-
             wn_max (float): Maximum wavenumber used for normalization.
         """
         super().__init__()
@@ -32,11 +30,11 @@ class ContinuousWavenumberEncoding(nn.Module):
         """
         Compute sinusoidal encodings for continuous wavenumber inputs.
 
-        Args:
-            wavenumbers (torch.Tensor) - Input tensor of shape: (batch, seq_len) or (seq_len,)
+        Params:
+            wavenumbers (torch.Tensor) - Input tensor of shape: (batch, seq_len) or (seq_len,).
 
         Returns:
-            torch.Tensor - Encoded representation of shape: (batch, seq_len, d_model) or (seq_len, d_model)
+            torch.Tensor - Encoded representation of shape: (batch, seq_len, d_model) or (seq_len, d_model).
         """
         # wavenumbers: (batch, seq_len) or (seq_len,)
         # normalize to [0, 1]
@@ -60,7 +58,7 @@ class SinusoidalPositionalEncoding(nn.Module):
         Initialize standard sinusoidal positional encoding.
         This module generates fixed positional encodings.
 
-        Args:
+        Params:
             model_dim (int) - Dimensionality of the model.
 
             max_len (int, optional) - Maximum sequence length supported. Defaults to 5000.
@@ -95,14 +93,14 @@ class SinusoidalPositionalEncoding(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Add positional encoding to input embeddings.
+        Forward pass through the MLP.
 
-        Args:
-            x (torch.Tensor) - Input tensor of shape: (batch, seq_len, model_dim) if batch_first=True 
-            or (seq_len, batch, model_dim) otherwise
+        Params:
+            x (torch.Tensor) - Input tensor of shape (batch_size, input_dim).
 
         Returns:
-            torch.Tensor - Tensor of the same shape as input, with positional encoding added.
+            torch.Tensor - Output tensor of shape: (batch_size,) if output_dim == 1 (due to squeeze) or
+                (batch_size, output_dim) otherwise
         """
         if self.batch_first:
             x = x + self.pe[:, : x.size(1)]
