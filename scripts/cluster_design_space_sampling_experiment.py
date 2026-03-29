@@ -150,41 +150,10 @@ if __name__ == "__main__":
                 config_weight_only_output_df = config_weight_only_output_df.assign(
                     model_ID=config_ID, eval_run=(eval_run + 1), weight_only=True
                 )
+                weight_only_ptq_dataframe_list.append(config_weight_only_output_df)
                 
         # Write checkpoint after every training run completes
         print(f"Checkpointing after training and evaluating {config_ID}", flush=True)
         write_csvs()
 
-    if full_ptq_dataframe_list:
-        full_ptq_dataframe = pd.concat(full_ptq_dataframe_list)
-        full_ptq_experiment_df = pd.merge(
-            left=model_config_dataframe,
-            right=full_ptq_dataframe,
-            how="outer",
-            on="model_ID",
-            suffixes=("_config", "_result"),
-            validate="one_to_many",
-        )
-        full_ptq_experiment_df.to_csv(
-            OUTPUT_PATH
-            / f"full_ptq_config_sampling_experiment_data_{EXPERIMENT_DEVICE}.csv"
-        )
-    else:
-        print("No full PTQ results collected.")
-
-    if weight_only_ptq_dataframe_list:
-        weight_only_ptq_dataframe = pd.concat(weight_only_ptq_dataframe_list)
-        weight_only_ptq_experiment_df = pd.merge(
-            left=model_config_dataframe,
-            right=weight_only_ptq_dataframe,
-            how="outer",
-            on="model_ID",
-            suffixes=("_config", "_result"),
-            validate="one_to_many",
-        )
-        weight_only_ptq_experiment_df.to_csv(
-            OUTPUT_PATH
-            / f"weight_only_ptq_config_sampling_experiment_data_{EXPERIMENT_DEVICE}.csv"
-        )
-    else:
-        print("No weight-only PTQ results collected.")
+    write_csvs()
