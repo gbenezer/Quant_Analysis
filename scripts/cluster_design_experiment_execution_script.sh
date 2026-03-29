@@ -2,7 +2,7 @@
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --gres=gpu:v100-sxm2:1
-#SBATCH --time=24:00:00
+#SBATCH --time=8:00:00
 #SBATCH --job-name=design_space_exploration_experiment_1
 #SBATCH --mem=32GB
 #SBATCH --ntasks=1
