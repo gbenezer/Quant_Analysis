@@ -79,7 +79,12 @@ class EncoderRegressor(nn.Module):
         self._init_weights()
 
     def _validate_config(self) -> None:
-        """Validate configuration parameters."""
+        """
+        Validate configuration parameters for consistency and correctness.
+
+        Raises:
+            ValueError - If any configuration parameter is invalid.
+        """
         if self.config.model_dim % self.config.n_heads_encoder != 0:
             raise ValueError(
                 f"model_dim ({self.config.model_dim}) must be divisible by "
@@ -97,7 +102,13 @@ class EncoderRegressor(nn.Module):
             )
 
     def _init_weights(self) -> None:
-        """Initialize model weights using Xavier uniform for linear layers."""
+        """
+        Initialize model parameters.
+
+        Additional behavior:
+            - For deep encoders (n_layers_encoder > 6), residual projections
+            are scaled to improve training stability.
+        """
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight)
@@ -121,7 +132,11 @@ class EncoderRegressor(nn.Module):
             nn.init.normal_(self.cls_token, std=0.02)
 
     def _scale_residual_weights(self) -> None:
-        """Scale output projections to stabilize deep networks."""
+        """
+        Scale residual projection weights for deep transformer networks.
+
+        This helps stabilize training when using many encoder layers.
+        """
         scale = (2 * self.config.n_layers_encoder) ** -0.5
 
         for name, param in self.named_parameters():
