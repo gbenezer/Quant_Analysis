@@ -152,7 +152,7 @@ def construct_mlp(
             max_epochs=max_epochs,
         )
     else:
-        trainer = Trainer(max_epochs=max_epochs)
+        trainer = Trainer(logger=False, max_epochs=max_epochs)
 
     trainer.fit(
         model=mlp,
