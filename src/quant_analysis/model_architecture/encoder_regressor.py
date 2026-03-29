@@ -12,7 +12,7 @@ class EncoderRegressor(nn.Module):
     def __init__(self, config: EncoderRegressorConfig):
         """Initialize the encoder regressor.
 
-        Args:
+        Params:
             config: Configuration dataclass specifying model architecture.
 
         Raises:
@@ -151,7 +151,7 @@ class EncoderRegressor(nn.Module):
     ) -> torch.Tensor:
         """Pool sequence representation to a single vector.
 
-        Args:
+        Params:
             x: Encoded sequence of shape (batch, seq_len, model_dim) if batch_first,
                else (seq_len, batch, model_dim).
             padding_mask: Optional boolean mask where True indicates padded positions.
@@ -195,7 +195,7 @@ class EncoderRegressor(nn.Module):
     ) -> torch.Tensor:
         """Forward pass through the encoder regressor.
 
-        Args:
+        Params:
             x: Input tensor of shape (batch, seq_len, input_dim) if batch_first,
                else (seq_len, batch, input_dim).
             src_key_padding_mask: Optional boolean mask where True indicates
