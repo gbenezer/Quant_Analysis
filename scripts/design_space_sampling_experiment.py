@@ -9,7 +9,6 @@ from data.load_data import get_superconductivity_data
 from src.quant_analysis.data_processing.ptq_result_to_dataframe import (
     ptq_results_to_dataframe,
 )
-from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 from src.quant_analysis.model_architecture.simple_mlp_sampler import (
     generate_mlp_config_list_from_dataframe,
     generate_mlp_sample_dataframe,
