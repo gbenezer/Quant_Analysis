@@ -3869,7 +3869,6 @@
 3867,396,431,175,1002,"[396, 431, 175]",relu,model_48,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_relative_p99_latency,2.542728028586738,pytorch,p99_latency,True,3.0
 3868,396,431,175,1002,"[396, 431, 175]",relu,model_48,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_relative_p99_latency,3.0875664301268255,pytorch,p99_latency,True,3.0
 3869,396,431,175,1002,"[396, 431, 175]",relu,model_48,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_relative_p99_latency,72.28092838494375,pytorch,p99_latency,True,3.0
-3870,445,64,32,541,"[445, 64, 32]",relu,model_49,,,,,,,,,,,
 3871,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_quantized_MAE,8.498331028677221,pytorch,MAE,False,1.0
 3872,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_quantized_MAE,8.487433145546397,pytorch,MAE,False,1.0
 3873,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_quantized_MAE,8.501843417464622,pytorch,MAE,False,1.0
@@ -3960,16 +3959,6 @@
 3958,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_relative_p99_latency,2.3538285867409185,pytorch,p99_latency,True,3.0
 3959,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_relative_p99_latency,2.4474928925291435,pytorch,p99_latency,True,3.0
 3960,128,128,57,313,"[128, 128, 57]",leaky_relu,model_5,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_relative_p99_latency,38.18269488841832,pytorch,p99_latency,True,3.0
-3961,853,441,114,1408,"[853, 441, 114]",gelu,model_50,,,,,,,,,,,
-3962,630,165,99,894,"[630, 165, 99]",celu,model_51,,,,,,,,,,,
-3963,222,290,213,725,"[222, 290, 213]",celu,model_52,,,,,,,,,,,
-3964,128,181,166,475,"[128, 181, 166]",gelu,model_53,,,,,,,,,,,
-3965,502,274,56,832,"[502, 274, 56]",celu,model_54,,,,,,,,,,,
-3966,728,100,182,1010,"[728, 100, 182]",celu,model_55,,,,,,,,,,,
-3967,237,340,67,644,"[237, 340, 67]",gelu,model_56,,,,,,,,,,,
-3968,313,119,183,615,"[313, 119, 183]",celu,model_57,,,,,,,,,,,
-3969,746,323,72,1141,"[746, 323, 72]",relu,model_58,,,,,,,,,,,
-3970,524,64,142,730,"[524, 64, 142]",elu,model_59,,,,,,,,,,,
 3971,506,313,171,990,"[506, 313, 171]",elu,model_6,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_quantized_MAE,8.989929759042619,pytorch,MAE,False,1.0
 3972,506,313,171,990,"[506, 313, 171]",elu,model_6,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_quantized_MAE,9.007058180399023,pytorch,MAE,False,1.0
 3973,506,313,171,990,"[506, 313, 171]",elu,model_6,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_quantized_MAE,8.998471551645732,pytorch,MAE,False,1.0
@@ -4060,11 +4049,6 @@
 4058,506,313,171,990,"[506, 313, 171]",elu,model_6,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_relative_p99_latency,2.304002642698706,pytorch,p99_latency,True,3.0
 4059,506,313,171,990,"[506, 313, 171]",elu,model_6,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_relative_p99_latency,2.8112206989024915,pytorch,p99_latency,True,3.0
 4060,506,313,171,990,"[506, 313, 171]",elu,model_6,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_relative_p99_latency,79.24331305911491,pytorch,p99_latency,True,3.0
-4061,128,404,32,564,"[128, 404, 32]",relu,model_60,,,,,,,,,,,
-4062,130,64,97,291,"[130, 64, 97]",celu,model_61,,,,,,,,,,,
-4063,593,391,207,1191,"[593, 391, 207]",elu,model_62,,,,,,,,,,,
-4064,818,214,32,1064,"[818, 214, 32]",leaky_relu,model_63,,,,,,,,,,,
-4065,356,226,139,721,"[356, 226, 139]",elu,model_64,,,,,,,,,,,
 4066,729,64,45,838,"[729, 64, 45]",leaky_relu,model_7,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_quantized_MAE,8.143659589880498,pytorch,MAE,False,1.0
 4067,729,64,45,838,"[729, 64, 45]",leaky_relu,model_7,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_quantized_MAE,8.173247663008079,pytorch,MAE,False,1.0
 4068,729,64,45,838,"[729, 64, 45]",leaky_relu,model_7,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_quantized_MAE,8.133141364225889,pytorch,MAE,False,1.0

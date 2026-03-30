@@ -9203,8 +9203,6 @@
 9201,585,64,207,856,"[585, 64, 207]",celu,model_62,Float8WeightOnlyConfig,float8,8.0,False,True,pt2_relative_p95_latency,1.0213409341327442,pt2,p95_latency,True,3.0
 9202,585,64,207,856,"[585, 64, 207]",celu,model_62,Int8WeightOnlyConfig,int8,8.0,False,True,pt2_relative_p99_latency,1.1958152618479887,pt2,p99_latency,True,3.0
 9203,585,64,207,856,"[585, 64, 207]",celu,model_62,Float8WeightOnlyConfig,float8,8.0,False,True,pt2_relative_p99_latency,1.011191452343284,pt2,p99_latency,True,3.0
-9204,789,351,55,1195,"[789, 351, 55]",gelu,model_63,,,,,,,,,,,
-9205,434,143,113,690,"[434, 143, 113]",relu,model_64,,,,,,,,,,,
 9206,759,319,32,1110,"[759, 319, 32]",elu,model_7,Int8WeightOnlyConfig,int8,8.0,False,True,pytorch_quantized_MAE,8.787248225674132,pytorch,MAE,False,1.0
 9207,759,319,32,1110,"[759, 319, 32]",elu,model_7,Float8WeightOnlyConfig,float8,8.0,False,True,pytorch_quantized_MAE,8.829285992167518,pytorch,MAE,False,1.0
 9208,759,319,32,1110,"[759, 319, 32]",elu,model_7,Int8WeightOnlyConfig,int8,8.0,False,True,pytorch_relative_MAE,1.000961512687468,pytorch,MAE,True,1.0

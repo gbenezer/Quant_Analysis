@@ -4679,9 +4679,6 @@
 4677,510,101,209,820,"[510, 101, 209]",relu,model_56,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_relative_p99_latency,2.91304559185928,pytorch,p99_latency,True,3.0
 4678,510,101,209,820,"[510, 101, 209]",relu,model_56,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_relative_p99_latency,3.554630822855759,pytorch,p99_latency,True,3.0
 4679,510,101,209,820,"[510, 101, 209]",relu,model_56,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_relative_p99_latency,59.07427784959434,pytorch,p99_latency,True,3.0
-4680,459,357,33,849,"[459, 357, 33]",celu,model_57,,,,,,,,,,,
-4681,158,154,224,536,"[158, 154, 224]",relu,model_58,,,,,,,,,,,
-4682,276,255,73,604,"[276, 255, 73]",celu,model_59,,,,,,,,,,,
 4683,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_quantized_MAE,8.135140843360018,pytorch,MAE,False,1.0
 4684,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_quantized_MAE,8.081801901644171,pytorch,MAE,False,1.0
 4685,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_quantized_MAE,8.131037686079713,pytorch,MAE,False,1.0
@@ -4772,11 +4769,6 @@
 4770,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_relative_p99_latency,1.652739899835709,pytorch,p99_latency,True,3.0
 4771,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_relative_p99_latency,2.0286668055629673,pytorch,p99_latency,True,3.0
 4772,260,147,49,456,"[260, 147, 49]",leaky_relu,model_6,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_relative_p99_latency,32.923923477978505,pytorch,p99_latency,True,3.0
-4773,786,64,121,971,"[786, 64, 121]",leaky_relu,model_60,,,,,,,,,,,
-4774,715,313,185,1213,"[715, 313, 185]",celu,model_61,,,,,,,,,,,
-4775,344,64,32,440,"[344, 64, 32]",gelu,model_62,,,,,,,,,,,
-4776,128,407,146,681,"[128, 407, 146]",relu,model_63,,,,,,,,,,,
-4777,615,217,110,942,"[615, 217, 110]",gelu,model_64,,,,,,,,,,,
 4778,146,275,130,551,"[146, 275, 130]",gelu,model_7,Int8WeightOnlyConfig,int8,8.0,False,False,pytorch_quantized_MAE,9.048698626255383,pytorch,MAE,False,1.0
 4779,146,275,130,551,"[146, 275, 130]",gelu,model_7,Float8WeightOnlyConfig,float8,8.0,False,False,pytorch_quantized_MAE,9.051385177942457,pytorch,MAE,False,1.0
 4780,146,275,130,551,"[146, 275, 130]",gelu,model_7,Int8DynamicActivationInt8WeightConfig,int8,8.0,True,False,pytorch_quantized_MAE,9.055216791937067,pytorch,MAE,False,1.0
