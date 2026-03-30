@@ -11,10 +11,10 @@ OUTPUT_FIGURE_PATH = Path.cwd() / "data" / "output" / "figures"
 
 # file path definition
 FULL_RESULT_PATH = (
-    OUTPUT_DATA_PATH / "full_ptq_config_sampling_experiment_data_Cluster.csv"
+    OUTPUT_DATA_PATH / "full_ptq_config_sampling_experiments.csv"
 )
 WEIGHT_ONLY_RESULT_PATH = (
-    OUTPUT_DATA_PATH / "weight_only_ptq_config_sampling_experiment_data_Cluster.csv"
+    OUTPUT_DATA_PATH / "weight_only_ptq_config_sampling_experiments.csv"
 )
 
 # importing the dataframes and adding disambiguating variables
@@ -34,6 +34,7 @@ def convert_str_to_categorical(df: pd.DataFrame) -> pd.DataFrame:
         "runtime",
         "activation",
         "model_ID",
+        "experiment_number"
     ]
 
     # convert the correct non-Categorical Series to Categorical
@@ -98,9 +99,7 @@ font_size_layout = go.Layout(
 font_size_template = dict(layout=font_size_layout)
 
 print(full_df.info())
-print(full_df["relative"])
 print(weight_df.info())
-
 # # graphs
 # relative_mae_full_test_only = full_df.query(
 #     expr="base_metric == 'MAE' & relative & split == 'test'"
