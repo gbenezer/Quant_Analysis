@@ -4,6 +4,9 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="200" width="160" x="260" y="10" as="geometry" />
+        </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-5" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="xsmbVpJHZbO0DEO25HZx-4">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
@@ -44,6 +47,24 @@
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of PTQ Experimental Results" vertex="1">
           <mxGeometry height="60" width="120" x="130" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Individual PyTorch Model and Compatible Dataloader" vertex="1">
+          <mxGeometry height="60" width="150" x="50" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of Absolute and Relative Error, Size, and Latency Metrics" vertex="1">
+          <mxGeometry height="60" width="200" x="520" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-17" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of TorchAO PTQ Configurations and Metadata" vertex="1">
+          <mxGeometry height="60" width="120" x="280" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Function to Apply PTQ Configuration" vertex="1">
+          <mxGeometry height="60" width="120" x="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-19" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.012;entryY=0.45;entryDx=0;entryDy=0;entryPerimeter=0;" target="mRHd1BaLJbAyPfY0vrQL-18">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
