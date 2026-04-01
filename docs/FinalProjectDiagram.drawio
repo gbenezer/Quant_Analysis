@@ -1,0 +1,25 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="tTsdlvfT-xpFgBtxndxY">
+    <mxGraphModel dx="970" dy="704" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="xsmbVpJHZbO0DEO25HZx-5" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="xsmbVpJHZbO0DEO25HZx-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsmbVpJHZbO0DEO25HZx-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;List of Tuples Representing Bounds on Hidden Layer Width,&amp;nbsp;&lt;/div&gt;&lt;div&gt;List of Activation Functions,&amp;nbsp;&lt;/div&gt;&lt;div&gt;and Whether to Enable Batch Normalization&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="280" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="xsmbVpJHZbO0DEO25HZx-8" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="xsmbVpJHZbO0DEO25HZx-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xsmbVpJHZbO0DEO25HZx-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of MLP Architectures" vertex="1">
+          <mxGeometry height="60" width="120" x="380" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="xsmbVpJHZbO0DEO25HZx-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of MLP Configurations" vertex="1">
+          <mxGeometry height="60" width="120" x="560" y="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
