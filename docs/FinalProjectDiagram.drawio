@@ -4,14 +4,17 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-21" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
-          <mxGeometry height="200" width="160" x="260" y="10" as="geometry" />
+          <mxGeometry height="200" width="160" x="230" y="10" as="geometry" />
         </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-5" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="xsmbVpJHZbO0DEO25HZx-4">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="&lt;div&gt;List of Tuples Representing Bounds on Hidden Layer Width,&amp;nbsp;&lt;/div&gt;&lt;div&gt;List of Activation Functions,&amp;nbsp;&lt;/div&gt;&lt;div&gt;and Whether to Enable Batch Normalization&lt;/div&gt;" vertex="1">
-          <mxGeometry height="60" width="240" x="70" y="450" as="geometry" />
+          <mxGeometry height="60" width="240" x="125" y="610" as="geometry" />
         </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-8" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="xsmbVpJHZbO0DEO25HZx-7">
           <mxGeometry relative="1" as="geometry" />
@@ -19,52 +22,73 @@
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-9" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" target="mRHd1BaLJbAyPfY0vrQL-7">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="430" y="540" />
-              <mxPoint x="190" y="540" />
+              <mxPoint x="485" y="700" />
+              <mxPoint x="245" y="700" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of MLP Architectures" vertex="1">
-          <mxGeometry height="60" width="120" x="370" y="450" as="geometry" />
+          <mxGeometry height="60" width="120" x="425" y="610" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-3" edge="1" parent="1" source="xsmbVpJHZbO0DEO25HZx-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;" target="mRHd1BaLJbAyPfY0vrQL-2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="xsmbVpJHZbO0DEO25HZx-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of MLP Configurations" vertex="1">
-          <mxGeometry height="60" width="120" x="550" y="450" as="geometry" />
+          <mxGeometry height="60" width="120" x="605" y="610" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-6" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;" target="mRHd1BaLJbAyPfY0vrQL-5">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of MLP PyTorch Models" vertex="1">
-          <mxGeometry height="60" width="120" x="550" y="570" as="geometry" />
+          <mxGeometry height="60" width="120" x="605" y="730" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-8" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" target="mRHd1BaLJbAyPfY0vrQL-7">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of Trained PyTorch Models" vertex="1">
-          <mxGeometry height="60" width="120" x="370" y="570" as="geometry" />
+          <mxGeometry height="60" width="120" x="425" y="730" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of PTQ Experimental Results" vertex="1">
-          <mxGeometry height="60" width="120" x="130" y="570" as="geometry" />
+          <mxGeometry height="60" width="120" x="185" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-22" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-18">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Individual PyTorch Model and Compatible Dataloader" vertex="1">
-          <mxGeometry height="60" width="150" x="50" y="70" as="geometry" />
+          <mxGeometry height="60" width="150" x="50" y="80" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="DataFrame of Absolute and Relative Error, Size, and Latency Metrics" vertex="1">
-          <mxGeometry height="60" width="200" x="520" y="270" as="geometry" />
+          <mxGeometry height="60" width="200" x="570" y="250" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-17" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-16">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="List of TorchAO PTQ Configurations and Metadata" vertex="1">
-          <mxGeometry height="60" width="120" x="280" y="30" as="geometry" />
+          <mxGeometry height="60" width="120" x="250" y="30" as="geometry" />
         </mxCell>
         <mxCell id="mRHd1BaLJbAyPfY0vrQL-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Function to Apply PTQ Configuration" vertex="1">
-          <mxGeometry height="60" width="120" x="280" y="130" as="geometry" />
+          <mxGeometry height="60" width="120" x="250" y="130" as="geometry" />
         </mxCell>
-        <mxCell id="mRHd1BaLJbAyPfY0vrQL-19" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=-0.012;entryY=0.45;entryDx=0;entryDy=0;entryPerimeter=0;" target="mRHd1BaLJbAyPfY0vrQL-18">
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-28" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-24">
           <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Baseline FP32 Model and Dictionary of Quantized Models" vertex="1">
+          <mxGeometry height="60" width="120" x="420" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-29" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-24" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="200" width="160" x="590" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-25" edge="1" parent="1" source="mRHd1BaLJbAyPfY0vrQL-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="mRHd1BaLJbAyPfY0vrQL-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-26" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Functions to Measure Metrics and Output Result Dictionary" vertex="1">
+          <mxGeometry height="60" width="120" x="610" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mRHd1BaLJbAyPfY0vrQL-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;" value="Function to Convert Result Dictionary to DataFrame" vertex="1">
+          <mxGeometry height="60" width="120" x="610" y="130" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
