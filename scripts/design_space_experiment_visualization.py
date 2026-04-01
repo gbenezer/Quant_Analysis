@@ -137,7 +137,7 @@ number_neurons_violin = px.violin(
         experiment_number="Experiment Number",
     ),
     box=True,
-    title="Distributional Differences In Hidden Layer Neurons Across Experiments",
+    title="Distributional Differences In Hidden Layer Neurons<br>Across Experiments",
 )
 number_neurons_violin.update_layout(template=font_size_template, margin=dict(l=120))
 number_neurons_violin.update_annotations(font=dict(size=26))
@@ -168,7 +168,7 @@ neuron_activation_violin = px.violin(
         activation="Activation Function",
     ),
     box=True,
-    title="Distributional Differences In Hidden Layer Neurons Across Activation Functions",
+    title="Distributional Differences In Hidden Layer Neurons<br>Across Activation Functions",
 )
 neuron_activation_violin.update_layout(template=font_size_template, margin=dict(l=120))
 neuron_activation_violin.update_annotations(font=dict(size=26))
@@ -417,10 +417,10 @@ pareto_mae_size = px.scatter(
         relative_MAE_mean = "Mean Absolute Error,<br>Relative to Baseline",
         precision = "Data Type of<br>Weight-Only PTQ"
     ),
-    title="Compression-Error Pareto Frontier of Quantized Feedforward Networks",
+    title="Compression-Error Pareto Frontier of<br>Quantized Feedforward Networks",
 )
 
-pareto_mae_size.update_layout(template=font_size_template, margin=dict(l=120))
+pareto_mae_size.update_layout(template=font_size_template, margin=dict(l=140, r=120, b=120))
 pareto_mae_size.update_annotations(font=dict(size=26))
 pareto_mae_size.write_html(
     OUTPUT_FIGURE_PATH / "pareto_mae_size.html"
@@ -444,10 +444,10 @@ pareto_mae_latency = px.scatter(
         relative_MAE_mean = "Mean Absolute Error,<br>Relative to Baseline",
         precision = "Data Type of<br>Weight-Only PTQ"
     ),
-    title="Latency-Error Pareto Frontier of Quantized Feedforward Networks",
+    title="Latency-Error Pareto Frontier of<br>Quantized Feedforward Networks",
 )
 
-pareto_mae_latency.update_layout(template=font_size_template, margin=dict(l=120))
+pareto_mae_latency.update_layout(template=font_size_template, margin=dict(l=140, r=120, b=120))
 pareto_mae_latency.update_annotations(font=dict(size=26))
 pareto_mae_latency.write_html(
     OUTPUT_FIGURE_PATH / "pareto_mae_latency.html"
@@ -470,10 +470,10 @@ relative_size_total_neurons = px.scatter(
         total_hidden_neurons = "Total Number of Hidden Neurons",
         precision = "Data Type of<br>Weight-Only PTQ"
     ),
-    title="Compression Ratio Versus Hidden Neurons in Quantized Feedforward Networks",
+    title="Compression Ratio Versus Hidden Neurons<br>in Quantized Feedforward Networks",
 )
 
-relative_size_total_neurons.update_layout(template=font_size_template, margin=dict(l=120))
+relative_size_total_neurons.update_layout(template=font_size_template, margin=dict(l=140, r=120, b=120))
 relative_size_total_neurons.update_annotations(font=dict(size=26))
 relative_size_total_neurons.write_html(
     OUTPUT_FIGURE_PATH / "relative_size_total_neurons.html"
@@ -490,10 +490,100 @@ mae_vs_activation = px.violin(
         activation = "Activation Function",
         precision = "Data Type of<br>Weight-Only PTQ"
     ),
-    title="Relative Error Versus Activation Functions in Quantized Feedforward Networks",
+    title="Relative Error Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
 mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
 mae_vs_activation.update_annotations(font=dict(size=26))
 mae_vs_activation.write_html(
     OUTPUT_FIGURE_PATH / "mae_vs_activation.html"
+)
+
+relative_mae_total_neurons = px.scatter(
+    pareto_front_summary_df,
+    x="total_hidden_neurons",
+    y="relative_MAE_mean",
+    error_y="relative_MAE_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        relative_MAE_mean = "Mean Absolute Error,<br>Relative to Baseline",
+        total_hidden_neurons = "Total Number of Hidden Neurons",
+        precision = "Data Type of<br>Weight-Only PTQ"
+    ),
+    title="Mean Absolute Error Versus Hidden Neurons<br>in Quantized Feedforward Networks",
+)
+
+relative_mae_total_neurons.update_layout(template=font_size_template, margin=dict(l=140, r=120, b=120))
+relative_mae_total_neurons.update_annotations(font=dict(size=26))
+relative_mae_total_neurons.write_html(
+    OUTPUT_FIGURE_PATH / "relative_mae_total_neurons.html"
+)
+
+relative_median_latency_total_neurons = px.scatter(
+    pareto_front_summary_df,
+    x="total_hidden_neurons",
+    y="relative_pt2_median_latency_mean",
+    error_y="relative_pt2_median_latency_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        relative_pt2_median_latency_mean = "Median PT2 Latency,<br>Relative to Baseline",
+        total_hidden_neurons = "Total Number of Hidden Neurons",
+        precision = "Data Type of<br>Weight-Only PTQ"
+    ),
+    title="Median PT2 Latency Versus Hidden Neurons<br>in Quantized Feedforward Networks",
+)
+
+relative_median_latency_total_neurons.update_layout(template=font_size_template, margin=dict(l=120))
+relative_median_latency_total_neurons.update_annotations(font=dict(size=26))
+relative_median_latency_total_neurons.write_html(
+    OUTPUT_FIGURE_PATH / "relative_median_latency_total_neurons.html"
+)
+
+latency_vs_activation = px.violin(
+    pareto_front_df,
+    x="activation",
+    y="relative_pt2_median_latency",
+    color="precision",
+    points="all",
+    labels=dict(
+        relative_pt2_median_latency = "Median PT2 Latency,<br>Relative to Baseline",
+        activation = "Activation Function",
+        precision = "Data Type of<br>Weight-Only PTQ"
+    ),
+    title="Relative PT2 Median Latency Versus Activation Functions<br>in Quantized Feedforward Networks",
+)
+latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+latency_vs_activation.update_annotations(font=dict(size=26))
+latency_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "latency_vs_activation.html"
+)
+
+size_vs_activation = px.violin(
+    pareto_front_df,
+    x="activation",
+    y="relative_model_pt2_size",
+    color="precision",
+    points="all",
+    labels=dict(
+        relative_model_pt2_size = "Model Size,<br>Relative to Baseline",
+        activation = "Activation Function",
+        precision = "Data Type of<br>Weight-Only PTQ"
+    ),
+    title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
+)
+size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+size_vs_activation.update_annotations(font=dict(size=26))
+size_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "size_vs_activation.html"
 )
