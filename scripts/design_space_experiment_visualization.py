@@ -553,7 +553,7 @@ relative_size_total_neurons = px.scatter(
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
-    title="Compression Ratio Versus Hidden Neurons<br>in Quantized Feedforward Networks",
+    title="Relative PT2 Size Versus Hidden Neurons<br>in Quantized Feedforward Networks",
 )
 
 relative_size_total_neurons.update_layout(
@@ -673,7 +673,7 @@ relative_size_vs_activation = px.violin(
         activation="Activation Function",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
-    title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
+    title="Relative PT2 Size Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
 relative_size_vs_activation.update_layout(
     template=font_size_template, margin=dict(l=120)
