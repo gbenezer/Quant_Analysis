@@ -483,11 +483,11 @@ pareto_front_summary_df = pareto_front_summary_df.rename(
 print(pareto_front_summary_df.info())
 
 pareto_mae_size = px.scatter(
-    pareto_front_summary_df,
-    x="relative_model_pt2_size_mean",
-    y="relative_MAE_mean",
-    error_x="relative_model_pt2_size_std",
-    error_y="relative_MAE_std",
+    pareto_front_df,
+    x="relative_model_pt2_size",
+    y="relative_MAE",
+    # error_x="relative_model_pt2_size_std",
+    # error_y="relative_MAE_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -496,8 +496,8 @@ pareto_mae_size = px.scatter(
         "activation",
     ],
     labels=dict(
-        relative_model_pt2_size_mean="PT2 Model Size,<br>Relative to Baseline",
-        relative_MAE_mean="Mean Absolute Error,<br>Relative to Baseline",
+        relative_model_pt2_size="PT2 Model Size,<br>Relative to Baseline",
+        relative_MAE="Mean Absolute Error,<br>Relative to Baseline",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
     title="Compression-Error Pareto Frontier of<br>Quantized Feedforward Networks",
@@ -510,11 +510,11 @@ pareto_mae_size.update_annotations(font=dict(size=26))
 pareto_mae_size.write_html(OUTPUT_FIGURE_PATH / "pareto_mae_size.html")
 
 pareto_mae_latency = px.scatter(
-    pareto_front_summary_df,
-    x="relative_pt2_median_latency_mean",
-    y="relative_MAE_mean",
-    error_x="relative_pt2_median_latency_std",
-    error_y="relative_MAE_std",
+    pareto_front_df,
+    x="relative_pt2_median_latency",
+    y="relative_MAE",
+    # error_x="relative_pt2_median_latency_std",
+    # error_y="relative_MAE_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -523,8 +523,8 @@ pareto_mae_latency = px.scatter(
         "activation",
     ],
     labels=dict(
-        relative_pt2_median_latency_mean="Median Latency,<br>Relative to Baseline",
-        relative_MAE_mean="Mean Absolute Error,<br>Relative to Baseline",
+        relative_pt2_median_latency="Median Latency,<br>Relative to Baseline",
+        relative_MAE="Mean Absolute Error,<br>Relative to Baseline",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
     title="Latency-Error Pareto Frontier of<br>Quantized Feedforward Networks",
@@ -549,7 +549,7 @@ relative_size_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        relative_model_pt2_size_mean="PT2 Model Size,<br>Relative to Baseline",
+        relative_model_pt2_size="PT2 Model Size,<br>Relative to Baseline",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
@@ -598,7 +598,7 @@ relative_mae_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        relative_MAE_mean="Mean Absolute Error,<br>Relative to Baseline",
+        relative_MAE="Mean Absolute Error,<br>Relative to Baseline",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
@@ -626,7 +626,7 @@ relative_median_latency_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        relative_pt2_median_latency_mean="Median PT2 Latency,<br>Relative to Baseline",
+        relative_pt2_median_latency="Median PT2 Latency,<br>Relative to Baseline",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
@@ -702,7 +702,7 @@ absolute_MAE_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        absolute_MAE_mean="Mean Absolute Error,<br>Kelvin Difference",
+        absolute_MAE="Mean Absolute Error,<br>Kelvin Difference",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
@@ -730,7 +730,7 @@ absolute_size_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        absolute_model_pt2_size_mean="PT2 Model Size,<br>Kilobytes",
+        absolute_model_pt2_size="PT2 Model Size,<br>Kilobytes",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
@@ -758,7 +758,7 @@ absolute_median_latency_total_neurons = px.scatter(
         "activation",
     ],
     labels=dict(
-        absolute_pt2_median_latency_mean="Median PT2 Latency,<br>Milliseconds",
+        absolute_pt2_median_latency="Median PT2 Latency,<br>Milliseconds",
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
