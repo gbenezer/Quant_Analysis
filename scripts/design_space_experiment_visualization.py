@@ -92,6 +92,17 @@ weight_df = convert_str_to_categorical(weight_df)
 # only weight-only configs exist in this dataframe
 weight_df = weight_df.drop("weight_only", axis=1)
 
+config_df = weight_df[
+    [
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ]
+].drop_duplicates()
+
+print(config_df.groupby(["activation"]).count())
+
 # figure size template
 font_size_layout = go.Layout(
     title=dict(font=dict(size=36)),
@@ -177,7 +188,7 @@ neuron_activation_violin.write_html(
 )
 
 neuron_per_layer_activation_scatter = px.scatter_3d(
-    data_frame=relative_mae_full_data,
+    data_frame=config_df,
     x="hidden_layer_1_neurons",
     y="hidden_layer_2_neurons",
     z="hidden_layer_3_neurons",
@@ -210,7 +221,7 @@ fig = make_subplots(
     column_widths=[800] * 3,
     row_heights=[800],
 )
-activation_category = relative_mae_full_data["activation"].astype("category")
+activation_category = config_df["activation"].astype("category")
 activation_labels = activation_category.cat.categories.tolist()
 color_map = {
     label: px.colors.qualitative.Plotly[i] for i, label in enumerate(activation_labels)
@@ -218,8 +229,8 @@ color_map = {
 colors = activation_category.map(color_map)
 fig.add_trace(
     go.Scatter(
-        x=relative_mae_full_data["hidden_layer_1_neurons"],
-        y=relative_mae_full_data["hidden_layer_2_neurons"],
+        x=config_df["hidden_layer_1_neurons"],
+        y=config_df["hidden_layer_2_neurons"],
         marker=dict(color=colors),
         mode="markers",
         showlegend=False,
@@ -229,8 +240,8 @@ fig.add_trace(
 )
 fig.add_trace(
     go.Scatter(
-        x=relative_mae_full_data["hidden_layer_1_neurons"],
-        y=relative_mae_full_data["hidden_layer_3_neurons"],
+        x=config_df["hidden_layer_1_neurons"],
+        y=config_df["hidden_layer_3_neurons"],
         marker=dict(color=colors),
         mode="markers",
         showlegend=False,
@@ -240,8 +251,8 @@ fig.add_trace(
 )
 fig.add_trace(
     go.Scatter(
-        x=relative_mae_full_data["hidden_layer_2_neurons"],
-        y=relative_mae_full_data["hidden_layer_3_neurons"],
+        x=config_df["hidden_layer_2_neurons"],
+        y=config_df["hidden_layer_3_neurons"],
         marker=dict(color=colors),
         mode="markers",
         showlegend=False,
@@ -357,34 +368,44 @@ absolute_median_latency_weight_only_pt2 = absolute_median_latency_weight_only_pt
     ]
 ]
 
-pareto_front_df = pd.merge(
-    relative_mae_weight_only,
-    relative_size_weight_only_pt2,
-    on=["model_ID", "precision", "eval_run", "experiment_number"],
-    how="left",
-).merge(
-    relative_median_latency_weight_only_pt2,
-    on=["model_ID", "precision", "eval_run", "experiment_number"],
-    how="left",
-).merge(
-    absolute_mae_weight_only,
-    on=["model_ID", "precision", "eval_run", "experiment_number"],
-    how="left",
-).merge(
-    absolute_size_weight_only_pt2,
-    on=["model_ID", "precision", "eval_run", "experiment_number"],
-    how="left",
-).merge(
-    absolute_median_latency_weight_only_pt2,
-    on=["model_ID", "precision", "eval_run", "experiment_number"],
-    how="left",
+pareto_front_df = (
+    pd.merge(
+        relative_mae_weight_only,
+        relative_size_weight_only_pt2,
+        on=["model_ID", "precision", "eval_run", "experiment_number"],
+        how="left",
+    )
+    .merge(
+        relative_median_latency_weight_only_pt2,
+        on=["model_ID", "precision", "eval_run", "experiment_number"],
+        how="left",
+    )
+    .merge(
+        absolute_mae_weight_only,
+        on=["model_ID", "precision", "eval_run", "experiment_number"],
+        how="left",
+    )
+    .merge(
+        absolute_size_weight_only_pt2,
+        on=["model_ID", "precision", "eval_run", "experiment_number"],
+        how="left",
+    )
+    .merge(
+        absolute_median_latency_weight_only_pt2,
+        on=["model_ID", "precision", "eval_run", "experiment_number"],
+        how="left",
+    )
 )
 
 # converting to kilobytes
-pareto_front_df["absolute_model_pt2_size"] = pareto_front_df["absolute_model_pt2_size"]  / 1000
+pareto_front_df["absolute_model_pt2_size"] = (
+    pareto_front_df["absolute_model_pt2_size"] / 1000
+)
 
 # converting to milliseconds
-pareto_front_df["absolute_pt2_median_latency"] =  pareto_front_df["absolute_pt2_median_latency"] * 1000
+pareto_front_df["absolute_pt2_median_latency"] = (
+    pareto_front_df["absolute_pt2_median_latency"] * 1000
+)
 print(pareto_front_df.info())
 
 pareto_scatter_3d = px.scatter_3d(
@@ -556,9 +577,13 @@ relative_mae_vs_activation = px.violin(
     ),
     title="Relative Error Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-relative_mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_mae_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 relative_mae_vs_activation.update_annotations(font=dict(size=26))
-relative_mae_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_mae_vs_activation.html")
+relative_mae_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "relative_mae_vs_activation.html"
+)
 
 relative_mae_total_neurons = px.scatter(
     pareto_front_summary_df,
@@ -629,9 +654,13 @@ relative_latency_vs_activation = px.violin(
     ),
     title="Relative PT2 Median Latency Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-relative_latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_latency_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 relative_latency_vs_activation.update_annotations(font=dict(size=26))
-relative_latency_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_latency_vs_activation.html")
+relative_latency_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "relative_latency_vs_activation.html"
+)
 
 relative_size_vs_activation = px.violin(
     pareto_front_df,
@@ -646,9 +675,13 @@ relative_size_vs_activation = px.violin(
     ),
     title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-relative_size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_size_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 relative_size_vs_activation.update_annotations(font=dict(size=26))
-relative_size_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_size_vs_activation.html")
+relative_size_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "relative_size_vs_activation.html"
+)
 
 absolute_MAE_total_neurons = px.scatter(
     pareto_front_summary_df,
@@ -748,9 +781,13 @@ absolute_mae_vs_activation = px.violin(
     ),
     title="Mean Absolute Error Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-absolute_mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_mae_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 absolute_mae_vs_activation.update_annotations(font=dict(size=26))
-absolute_mae_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_mae_vs_activation.html")
+absolute_mae_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_mae_vs_activation.html"
+)
 
 absolute_latency_vs_activation = px.violin(
     pareto_front_df,
@@ -765,9 +802,13 @@ absolute_latency_vs_activation = px.violin(
     ),
     title="PT2 Median Latency Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-absolute_latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_latency_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 absolute_latency_vs_activation.update_annotations(font=dict(size=26))
-absolute_latency_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_latency_vs_activation.html")
+absolute_latency_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_latency_vs_activation.html"
+)
 
 absolute_size_vs_activation = px.violin(
     pareto_front_df,
@@ -776,12 +817,16 @@ absolute_size_vs_activation = px.violin(
     color="precision",
     points="all",
     labels=dict(
-        absolute_model_pt2_size="Model Size,<br>absolute to Baseline",
+        absolute_model_pt2_size="Model Size,<br>Kilobytes",
         activation="Activation Function",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
-    title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
+    title="PT2 Model Size Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-absolute_size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_size_vs_activation.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
 absolute_size_vs_activation.update_annotations(font=dict(size=26))
-absolute_size_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_size_vs_activation.html")
+absolute_size_vs_activation.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_size_vs_activation.html"
+)
