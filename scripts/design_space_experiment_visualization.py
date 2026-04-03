@@ -683,6 +683,12 @@ relative_size_vs_activation.write_html(
     OUTPUT_FIGURE_PATH / "relative_size_vs_activation.html"
 )
 
+print(
+    pareto_front_df[["absolute_pt2_median_latency", "precision"]]
+    .groupby(["precision"])
+    .agg(func=["mean", "std"])
+)
+
 absolute_MAE_total_neurons = px.scatter(
     pareto_front_summary_df,
     x="total_hidden_neurons",
