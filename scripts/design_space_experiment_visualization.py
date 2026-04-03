@@ -537,10 +537,10 @@ pareto_mae_latency.update_annotations(font=dict(size=26))
 pareto_mae_latency.write_html(OUTPUT_FIGURE_PATH / "pareto_mae_latency.html")
 
 relative_size_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="relative_model_pt2_size_mean",
-    error_y="relative_model_pt2_size_std",
+    y="relative_model_pt2_size",
+    # error_y="relative_model_pt2_size_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -586,10 +586,10 @@ relative_mae_vs_activation.write_html(
 )
 
 relative_mae_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="relative_MAE_mean",
-    error_y="relative_MAE_std",
+    y="relative_MAE",
+    # error_y="relative_MAE_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -602,7 +602,7 @@ relative_mae_total_neurons = px.scatter(
         total_hidden_neurons="Total Number of Hidden Neurons",
         precision="Data Type of<br>Weight-Only PTQ",
     ),
-    title="Mean Absolute Error Versus Hidden Neurons<br>in Quantized Feedforward Networks",
+    title="Relative Error Versus Hidden Neurons<br>in Quantized Feedforward Networks",
 )
 
 relative_mae_total_neurons.update_layout(
@@ -614,10 +614,10 @@ relative_mae_total_neurons.write_html(
 )
 
 relative_median_latency_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="relative_pt2_median_latency_mean",
-    error_y="relative_pt2_median_latency_std",
+    y="relative_pt2_median_latency",
+    # error_y="relative_pt2_median_latency_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -690,10 +690,10 @@ print(
 )
 
 absolute_MAE_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="absolute_MAE_mean",
-    error_y="absolute_MAE_std",
+    y="absolute_MAE",
+    # error_y="absolute_MAE_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -718,10 +718,10 @@ absolute_MAE_total_neurons.write_html(
 )
 
 absolute_size_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="absolute_model_pt2_size_mean",
-    error_y="absolute_model_pt2_size_std",
+    y="absolute_model_pt2_size",
+    # error_y="absolute_model_pt2_size_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
@@ -746,10 +746,10 @@ absolute_size_total_neurons.write_html(
 )
 
 absolute_median_latency_total_neurons = px.scatter(
-    pareto_front_summary_df,
+    pareto_front_df,
     x="total_hidden_neurons",
-    y="absolute_pt2_median_latency_mean",
-    error_y="absolute_pt2_median_latency_std",
+    y="absolute_pt2_median_latency",
+    # error_y="absolute_pt2_median_latency_std",
     color="precision",
     hover_data=[
         "hidden_layer_1_neurons",
