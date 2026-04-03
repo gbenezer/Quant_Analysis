@@ -379,6 +379,12 @@ pareto_front_df = pd.merge(
     on=["model_ID", "precision", "eval_run", "experiment_number"],
     how="left",
 )
+
+# converting to kilobytes
+pareto_front_df["absolute_model_pt2_size"] = pareto_front_df["absolute_model_pt2_size"]  / 1000
+
+# converting to milliseconds
+pareto_front_df["absolute_pt2_median_latency"] =  pareto_front_df["absolute_pt2_median_latency"] * 1000
 print(pareto_front_df.info())
 
 pareto_scatter_3d = px.scatter_3d(
@@ -421,6 +427,9 @@ pareto_front_summary_df = (
             "relative_MAE",
             "relative_model_pt2_size",
             "relative_pt2_median_latency",
+            "absolute_MAE",
+            "absolute_model_pt2_size",
+            "absolute_pt2_median_latency",
         ]
     ]
     .groupby(
@@ -534,7 +543,7 @@ relative_size_total_neurons.write_html(
     OUTPUT_FIGURE_PATH / "relative_size_total_neurons.html"
 )
 
-mae_vs_activation = px.violin(
+relative_mae_vs_activation = px.violin(
     pareto_front_df,
     x="activation",
     y="relative_MAE",
@@ -547,9 +556,9 @@ mae_vs_activation = px.violin(
     ),
     title="Relative Error Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
-mae_vs_activation.update_annotations(font=dict(size=26))
-mae_vs_activation.write_html(OUTPUT_FIGURE_PATH / "mae_vs_activation.html")
+relative_mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_mae_vs_activation.update_annotations(font=dict(size=26))
+relative_mae_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_mae_vs_activation.html")
 
 relative_mae_total_neurons = px.scatter(
     pareto_front_summary_df,
@@ -607,7 +616,7 @@ relative_median_latency_total_neurons.write_html(
     OUTPUT_FIGURE_PATH / "relative_median_latency_total_neurons.html"
 )
 
-latency_vs_activation = px.violin(
+relative_latency_vs_activation = px.violin(
     pareto_front_df,
     x="activation",
     y="relative_pt2_median_latency",
@@ -620,11 +629,11 @@ latency_vs_activation = px.violin(
     ),
     title="Relative PT2 Median Latency Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
-latency_vs_activation.update_annotations(font=dict(size=26))
-latency_vs_activation.write_html(OUTPUT_FIGURE_PATH / "latency_vs_activation.html")
+relative_latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_latency_vs_activation.update_annotations(font=dict(size=26))
+relative_latency_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_latency_vs_activation.html")
 
-size_vs_activation = px.violin(
+relative_size_vs_activation = px.violin(
     pareto_front_df,
     x="activation",
     y="relative_model_pt2_size",
@@ -637,6 +646,142 @@ size_vs_activation = px.violin(
     ),
     title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
 )
-size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
-size_vs_activation.update_annotations(font=dict(size=26))
-size_vs_activation.write_html(OUTPUT_FIGURE_PATH / "size_vs_activation.html")
+relative_size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+relative_size_vs_activation.update_annotations(font=dict(size=26))
+relative_size_vs_activation.write_html(OUTPUT_FIGURE_PATH / "relative_size_vs_activation.html")
+
+absolute_MAE_total_neurons = px.scatter(
+    pareto_front_summary_df,
+    x="total_hidden_neurons",
+    y="absolute_MAE_mean",
+    error_y="absolute_MAE_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        absolute_MAE_mean="Mean Absolute Error,<br>Kelvin Difference",
+        total_hidden_neurons="Total Number of Hidden Neurons",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Mean Absolute Error Versus Total Hidden Neurons<br>in Quantized Feedforward Networks",
+)
+
+absolute_MAE_total_neurons.update_layout(
+    template=font_size_template, margin=dict(l=140, r=120, b=120)
+)
+absolute_MAE_total_neurons.update_annotations(font=dict(size=26))
+absolute_MAE_total_neurons.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_MAE_total_neurons.html"
+)
+
+absolute_size_total_neurons = px.scatter(
+    pareto_front_summary_df,
+    x="total_hidden_neurons",
+    y="absolute_model_pt2_size_mean",
+    error_y="absolute_model_pt2_size_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        absolute_model_pt2_size_mean="PT2 Model Size,<br>Kilobytes",
+        total_hidden_neurons="Total Number of Hidden Neurons",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Model Size Versus Total Hidden Neurons<br>in Quantized Feedforward Networks",
+)
+
+absolute_size_total_neurons.update_layout(
+    template=font_size_template, margin=dict(l=140, r=120, b=120)
+)
+absolute_size_total_neurons.update_annotations(font=dict(size=26))
+absolute_size_total_neurons.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_size_total_neurons.html"
+)
+
+absolute_median_latency_total_neurons = px.scatter(
+    pareto_front_summary_df,
+    x="total_hidden_neurons",
+    y="absolute_pt2_median_latency_mean",
+    error_y="absolute_pt2_median_latency_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        absolute_pt2_median_latency_mean="Median PT2 Latency,<br>Milliseconds",
+        total_hidden_neurons="Total Number of Hidden Neurons",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Median PT2 Latency Versus Total Hidden Neurons<br>in Quantized Feedforward Networks",
+)
+
+absolute_median_latency_total_neurons.update_layout(
+    template=font_size_template, margin=dict(l=120)
+)
+absolute_median_latency_total_neurons.update_annotations(font=dict(size=26))
+absolute_median_latency_total_neurons.write_html(
+    OUTPUT_FIGURE_PATH / "absolute_median_latency_total_neurons.html"
+)
+
+# activation functions
+absolute_mae_vs_activation = px.violin(
+    pareto_front_df,
+    x="activation",
+    y="absolute_MAE",
+    color="precision",
+    points="all",
+    labels=dict(
+        absolute_MAE="Mean Absolute Error,<br>Kelvin Difference",
+        activation="Activation Function",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Mean Absolute Error Versus Activation Functions<br>in Quantized Feedforward Networks",
+)
+absolute_mae_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_mae_vs_activation.update_annotations(font=dict(size=26))
+absolute_mae_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_mae_vs_activation.html")
+
+absolute_latency_vs_activation = px.violin(
+    pareto_front_df,
+    x="activation",
+    y="absolute_pt2_median_latency",
+    color="precision",
+    points="all",
+    labels=dict(
+        absolute_pt2_median_latency="Median PT2 Latency,<br>Milliseconds",
+        activation="Activation Function",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="PT2 Median Latency Versus Activation Functions<br>in Quantized Feedforward Networks",
+)
+absolute_latency_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_latency_vs_activation.update_annotations(font=dict(size=26))
+absolute_latency_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_latency_vs_activation.html")
+
+absolute_size_vs_activation = px.violin(
+    pareto_front_df,
+    x="activation",
+    y="absolute_model_pt2_size",
+    color="precision",
+    points="all",
+    labels=dict(
+        absolute_model_pt2_size="Model Size,<br>absolute to Baseline",
+        activation="Activation Function",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Compression Ratio Versus Activation Functions<br>in Quantized Feedforward Networks",
+)
+absolute_size_vs_activation.update_layout(template=font_size_template, margin=dict(l=120))
+absolute_size_vs_activation.update_annotations(font=dict(size=26))
+absolute_size_vs_activation.write_html(OUTPUT_FIGURE_PATH / "absolute_size_vs_activation.html")
