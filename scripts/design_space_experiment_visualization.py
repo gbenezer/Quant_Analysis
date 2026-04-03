@@ -536,6 +536,33 @@ pareto_mae_latency.update_layout(
 pareto_mae_latency.update_annotations(font=dict(size=26))
 pareto_mae_latency.write_html(OUTPUT_FIGURE_PATH / "pareto_mae_latency.html")
 
+pareto_size_latency = px.scatter(
+    pareto_front_df,
+    x="relative_model_pt2_size",
+    y="relative_pt2_median_latency",
+    # error_x="relative_model_pt2_size_std",
+    # error_y="relative_MAE_std",
+    color="precision",
+    hover_data=[
+        "hidden_layer_1_neurons",
+        "hidden_layer_2_neurons",
+        "hidden_layer_3_neurons",
+        "activation",
+    ],
+    labels=dict(
+        relative_model_pt2_size="PT2 Model Size,<br>Relative to Baseline",
+        relative_pt2_median_latency="Median Latency,<br>Relative to Baseline",
+        precision="Data Type of<br>Weight-Only PTQ",
+    ),
+    title="Compression-Latency Pareto Frontier of<br>Quantized Feedforward Networks",
+)
+
+pareto_size_latency.update_layout(
+    template=font_size_template, margin=dict(l=140, r=120, b=120)
+)
+pareto_size_latency.update_annotations(font=dict(size=26))
+pareto_size_latency.write_html(OUTPUT_FIGURE_PATH / "pareto_size_latency.html")
+
 relative_size_total_neurons = px.scatter(
     pareto_front_df,
     x="total_hidden_neurons",
