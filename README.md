@@ -154,34 +154,27 @@ sbatch scripts/cluster_experiment_execution_script.sh
 
 ## Package API
 
-The `quant_analysis` package exposes its main components through `src/quant_analysis/__init__.py`. Core public interfaces:
-
-```python
-from quant_analysis.model_architecture.simple_mlp import SimpleMLP
-from quant_analysis.model_architecture.model_configs import SimpleMLPConfig, load_model_config
-from quant_analysis.model_architecture.simple_mlp_sampler import sample_mlp_configs
-from quant_analysis.quantization.ptq.run_ptq import run_ptq, run_ptq_isolated
-from quant_analysis.quantization.ptq.ptq_config_metadata import PTQ_CONFIGS
-from quant_analysis.data_processing.ptq_result_to_dataframe import ptq_result_to_dataframe
-```
+The `quant_analysis` package exposes its main components through `src/quant_analysis/__init__.py`.
 
 ### Example: Running PTQ on a Trained Model
 
 ```python
-from quant_analysis.model_architecture.simple_mlp import SimpleMLP
-from quant_analysis.model_architecture.model_configs import load_model_config
-from quant_analysis.model_loading.load_mlp_from_pth import load_mlp_from_pth
-from quant_analysis.quantization.ptq.run_ptq import run_ptq
-from quant_analysis.quantization.ptq.ptq_config_metadata import PTQ_CONFIGS
+from quant_analysis import SimpleMLPConfig, construct_mlp, run_ptq, PTQ_QUANT_CONFIG_METADATA
 
-# Load a trained model
-config = load_model_config("models/configs/my_model.json")
-model = load_mlp_from_pth("models/state_dicts/my_model.pth", config)
+# Define an architecture and train a model
+config = SimpleMLPConfig(
+    input_dim=81,
+    output_dim=1,
+    neurons_per_layer=[512, 256, 128],
+    activation="relu",
+    use_batch_norm=True,
+)
+model = construct_mlp(config=config, name="my_model", max_epochs=25)
 
 # Evaluate all PTQ schemes
 results = run_ptq(
     model=model,
-    ptq_configs=PTQ_CONFIGS,
+    ptq_configs=PTQ_QUANT_CONFIG_METADATA,
     test_loader=test_loader,
     n_runs=500,
     n_warmup=50,
