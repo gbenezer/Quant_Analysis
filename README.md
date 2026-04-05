@@ -108,15 +108,15 @@ Dependencies are declared in `pyproject.toml`. Key packages include:
 
 `quantize_ptq.py` applies TorchAO PTQ schemes to trained models. Before quantization, batch normalization layers can be fused into adjacent linear layers using `fuse_mlp_bn()` to improve quantization accuracy.
 
-Supported quantization schemes (defined in `ptq_config_metadata.py`):
+Supported quantization schemes (defined in `ptq_config_metadata.py`), though issues may arise due to dimensionality of your models being incompatible with default quantization granularities:
 
-| Scheme | Type | Bits/Weight | Dynamic Calibration |
+| Scheme | Type | Bits/Weight | Dynamic Calibration | Minimum CUDA Compute Capability | Compatibility Notes |
 |---|---|---|---|
-| `int8wo` | Weight-only | 8 | No |
-| `float8wo` | Weight-only | 8 | No |
-| `float8_dynamic_activation_float8_weight` | Weight + Activation | 8 | Yes |
-| `float8_static_activation_float8_weight` | Weight + Activation | 8 | No |
-| `int8_dynamic_activation_int8_weight` | Weight + Activation | 8 | Yes |
+| `int8wo` | Weight-only | 8 | No | 8.6 | |
+| `float8wo` | Weight-only | 8 | No | 8.6 | ONNX incompatible given `float8e4m3fn` default TorchAO float format |
+| `float8_dynamic_activation_float8_weight` | Weight + Activation | 8 | Yes | 8.6 | |
+| `float8_static_activation_float8_weight` | Weight + Activation | 8 | No | 8.9 | May silently fully or partially no-op on CPU |
+| `int8_dynamic_activation_int8_weight` | Weight + Activation | 8 | Yes | 8.6 | |
 
 ### 4. Evaluation
 
