@@ -67,6 +67,19 @@ Quant_Analysis/
 │   ├── checkpoints/                   # PyTorch Lightning checkpoints
 │   ├── onnx/                          # Exported ONNX models
 │   └── pt2/                           # Exported PT2 models
+├── tests/
+│   ├── model_architecture/
+│   │   ├── test_simple_mlp.py                    # SimpleMLP unit tests
+│   │   ├── test_simple_mlp_sampler.py             # Sampler unit tests
+│   │   └── test_superconductor_mlp_lightning.py   # Lightning wrapper unit tests
+│   ├── quantization/
+│   │   ├── test_quantize_ptq.py                  # Quantization application unit tests
+│   │   └── test_run_ptq.py                       # PTQ pipeline unit tests
+│   ├── metric_calculation/
+│   │   ├── test_evaluate_mean_absolute_error.py  # MAE evaluation unit tests
+│   │   └── test_evaluate_size_and_latency.py     # Size and latency evaluation unit tests
+│   └── data_processing/
+│       └── test_ptq_result_to_dataframe.py       # DataFrame conversion unit tests
 └── docs/                              # Architecture diagrams and result figures
 ```
 
