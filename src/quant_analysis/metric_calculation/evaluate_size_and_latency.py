@@ -285,6 +285,9 @@ def evaluate_pytorch_latency_and_estimate_size(
     """
 
     # Try to avoid modifying original model.
+    # Note: because deepcopy is used, the original model's training mode and
+    # parameters are left unchanged after this call. If deepcopy fails, the
+    # fallback moves the original model in-place, which may mutate its state.
     try:
         model = copy.deepcopy(model).to(device)
     except Exception:
