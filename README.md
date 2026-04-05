@@ -159,7 +159,35 @@ The `quant_analysis` package exposes its main components through `src/quant_anal
 ### Example: Running PTQ on a Trained Model
 
 ```python
+import torch
 from quant_analysis import SimpleMLPConfig, construct_mlp, run_ptq, PTQ_QUANT_CONFIG_METADATA
+from data.load_data import get_superconductivity_data
+
+# set random seed and other globals (for this script execution)
+SEED = 42
+WORKERS = 4
+BATCH_SIZE = 128
+EPOCHS = 25
+RUNS = 500
+WARMUP = 50
+SAVE_OUTPUT = False
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# load superconductivity data
+(
+    _,
+    _,
+    _,
+    _,
+    _,
+    _,
+    test_loader,
+) = get_superconductivity_data(
+    test_fraction=0.2, 
+    random_seed=SEED, 
+    n_workers=WORKERS, 
+    batch_n=BATCH_SIZE
+)
 
 # Define an architecture and train a model
 config = SimpleMLPConfig(
@@ -169,15 +197,17 @@ config = SimpleMLPConfig(
     activation="relu",
     use_batch_norm=True,
 )
-model = construct_mlp(config=config, name="my_model", max_epochs=25)
+model = construct_mlp(config=config, seed=SEED, name="my_model", max_epochs=EPOCHS, save_output=SAVE_OUTPUT)
 
 # Evaluate all PTQ schemes
 results = run_ptq(
-    model=model,
-    ptq_configs=PTQ_QUANT_CONFIG_METADATA,
-    test_loader=test_loader,
-    n_runs=500,
-    n_warmup=50,
+    base_model=model,
+    dataloader=test_loader,
+    evaluation_device=device,
+    batch_size=BATCH_SIZE,
+    runs=RUNS,
+    warmup=WARMUP,
+    weight_only=False,
 )
 ```
 
