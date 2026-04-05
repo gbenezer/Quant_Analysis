@@ -6,17 +6,13 @@ import pandas as pd
 import torch
 
 from data.load_data import get_superconductivity_data
-from src.quant_analysis.data_processing.ptq_result_to_dataframe import (
+from src.quant_analysis import (
     ptq_results_to_dataframe,
-)
-from src.quant_analysis.model_architecture.simple_mlp_sampler import (
     generate_mlp_config_list_from_dataframe,
     generate_mlp_sample_dataframe,
+    construct_mlp, 
+    run_ptq
 )
-from src.quant_analysis.model_architecture.superconductor_mlp_lightning import (
-    construct_mlp,
-)
-from src.quant_analysis.quantization.ptq.run_ptq import run_ptq
 
 # initialize global variables
 full_ptq_dataframe_list = []
