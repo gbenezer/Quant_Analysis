@@ -25,66 +25,7 @@ class SimpleMLPConfig:
     use_batch_norm: bool
 
 
-@dataclass
-class TransformerEncoderDecoderForecasterConfig:
-    """
-    WIP Transformers
-    """
-
-    input_dim: int  # Raw feature dimension
-    model_dim: int  # Transformer hidden dimension
-    n_heads_encoder: int  # Attention heads per encoder layer
-    n_heads_decoder: int  # Attention heads per decoder layer
-    n_layers_encoder: int  # Encoder layers
-    n_layers_decoder: int  # Decoder layers
-    feedforward_dim: int  # Feedforward dimension (typically 4 * d_model)
-    dropout: float  # Dropout rate
-    output_dim: int  # Regression output
-    pooling: str  # "cls", "mean", or "last"
-    activation: str
-    max_seq_len: int = 1  # For tabular: 1; for time-series: sequence length
-    use_positional_encoding: bool = False  # True for time-series
-    batch_first: bool = False
-    norm_first: bool = False
-    enable_nested_tensor: bool = False
-
-
-@dataclass
-class EncoderRegressorConfig:
-    input_dim: int  # Raw feature dimension
-    model_dim: int  # Transformer hidden dimension
-    n_heads_encoder: int  # Attention heads per encoder layer
-    n_layers_encoder: int  # Encoder layers
-    feedforward_dim: int  # Feedforward dimension (typically 4 * d_model)
-    dropout: float  # Dropout rate
-    output_dim: int  # Regression output
-    pooling: str  # "cls", "mean", or "last"
-    activation: str
-    max_seq_len: int = 1  # For tabular: 1; for time-series: sequence length
-    use_positional_encoding: bool = False
-    batch_first: bool = False
-    norm_first: bool = False
-    enable_nested_tensor: bool = False
-
-
-@dataclass
-class DecoderForecasterConfig:
-    input_dim: int  # Raw feature dimension
-    model_dim: int  # Transformer hidden dimension
-    n_heads_decoder: int  # Attention heads per decoder layer
-    n_layers_decoder: int  # Decoder layers
-    feedforward_dim: int  # Feedforward dimension (typically 4 * d_model)
-    dropout: float  # Dropout rate
-    output_dim: int  # Regression output
-    activation: str
-    max_seq_len: int = 1  # For tabular: 1; for time-series: sequence length
-    use_positional_encoding: bool = False  # True for time-series
-    batch_first: bool = False
-    norm_first: bool = False
-
-
 # helper function section
-
 
 # generic model config saving
 def save_model_config(config, path: Path) -> None:
