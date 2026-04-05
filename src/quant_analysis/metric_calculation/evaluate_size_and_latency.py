@@ -45,6 +45,7 @@ def measure_latency_onnx(
 
     latencies = []
 
+    # Measure inference time across multiple runs.
     for _ in range(runs):
         start = time.perf_counter()
         session.run(None, {input_name: x})
@@ -52,6 +53,7 @@ def measure_latency_onnx(
 
     latencies = np.array(latencies)
 
+    # Compute latency statistics.
     median = float(np.median(latencies))
     p95 = float(np.percentile(latencies, 95))
     p99 = float(np.percentile(latencies, 99))
@@ -71,8 +73,11 @@ def estimate_quantized_size(model: nn.Module, bits_per_weight: int):
     Returns:
         float: Estimated model size in bytes.
     """
+
+    # Count total number of parameters in the model.
     total_weights = sum(p.numel() for p in model.parameters())
-    # returns size in bytes as that is the native measure of size
+
+    # Convert bits to bytes.
     return total_weights * bits_per_weight / 8
 
 
@@ -92,17 +97,18 @@ def assess_relative_performance(
         Tuple[float, float, float, float]: Relative size and latency metrics..
     """
 
-    # model size
+    # Convert sizes to float
     quantized_model_size_float = float(quantized_model_performance[0])
     base_model_size_float = float(base_model_performance[0])
+
+    # Ratio < 1 means smaller / faster than baseline
     relative_model_size = quantized_model_size_float / base_model_size_float
 
+    # -- Latency ratios (lower is better) --
     # median latency
     relative_median_latency = quantized_model_performance[1] / base_model_performance[1]
-
     # p95 latency
     relative_p95_latency = quantized_model_performance[2] / base_model_performance[2]
-
     # p99 latency
     relative_p99_latency = quantized_model_performance[3] / base_model_performance[3]
 
@@ -138,15 +144,19 @@ def evaluate_onnx_latency_and_size(
         Tuple[int, float, float, float]: Model size in bytes, median latency, p95 latency, p99 latency.
     """
 
+    # Work on a copy to avoid mutating original model.
     model = copy.deepcopy(model)
     model.eval()
 
+    # Temporary directory.
     with tempfile.TemporaryDirectory(dir="/tmp") as tmpdir:
         onnx_path = Path(tmpdir) / "temp_model.onnx"
 
+        # Ensure export happens on same device as model parameters.
         export_device = next(model.parameters()).device
         input_for_export = sample_input.to(device=export_device, dtype=input_dtype)
 
+        # Export PyTorch model to ONNX format.
         torch.onnx.export(
             model,
             (input_for_export,),
@@ -157,18 +167,20 @@ def evaluate_onnx_latency_and_size(
             dynamo=True,
         )
 
-        # model size
+        # Get serialized ONNX file size.
         model_size_bytes = onnx_path.stat().st_size
 
-        # ONNX Runtime session
+        # Configure ONNX Runtime threading.
         sess_options = ort.SessionOptions()
         sess_options.intra_op_num_threads = int(os.environ.get("ORT_NUM_THREADS", 4))
         sess_options.inter_op_num_threads = int(os.environ.get("ORT_NUM_THREADS", 4))
-        session = ort.InferenceSession(str(onnx_path), sess_options=sess_options)
 
+        # Create inference session.
+        session = ort.InferenceSession(str(onnx_path), sess_options=sess_options)
         input_name = session.get_inputs()[0].name
         x = input_for_export.cpu().numpy()
 
+        # Measure latency.
         median_latency, p95_latency, p99_latency = measure_latency_onnx(
             session,
             input_name,
@@ -200,10 +212,12 @@ def evaluate_pt2_latency_and_size(
     actual_device = next(model.parameters()).device
     is_cuda = actual_device.type == "cuda"
     sample_input = sample_input.to(device=actual_device, dtype=input_dtype)
-    exported = torch.export.export(model, (sample_input,))
 
+    # Export model using PyTorch 2 export API.
+    exported = torch.export.export(model, (sample_input,))
     module = exported.module()
 
+    # Serialize exported model to disk to measure size.
     with tempfile.NamedTemporaryFile(suffix=".pt2", delete=False, dir="/tmp") as f:
         path = f.name
 
@@ -211,8 +225,10 @@ def evaluate_pt2_latency_and_size(
 
     model_size_bytes = os.path.getsize(path)
 
+    # Clean up temp file.
     os.remove(path)
 
+    # Warmup runs.
     for _ in range(warmup):
         module(sample_input)
     if is_cuda:
@@ -220,6 +236,7 @@ def evaluate_pt2_latency_and_size(
 
     latencies = []
 
+    # Measure latency.
     for _ in range(runs):
         if is_cuda:
             torch.cuda.synchronize()
@@ -267,6 +284,7 @@ def evaluate_pytorch_latency_and_estimate_size(
         Tuple[int, float, float, float]: Model size in bytes, median latency, p95 latency, p99 latency.
     """
 
+    # Try to avoid modifying original model.
     try:
         model = copy.deepcopy(model).to(device)
     except Exception:
@@ -276,6 +294,7 @@ def evaluate_pytorch_latency_and_estimate_size(
 
     model.eval()
 
+    # Estimate size based on quantization bits.
     model_size = estimate_quantized_size(model, bits_per_weight)
 
     device = torch.device(device)
@@ -283,6 +302,7 @@ def evaluate_pytorch_latency_and_estimate_size(
     if device.type == "cuda":
         torch.cuda.synchronize()
 
+    # Warmup runs.
     with torch.no_grad():
         for _ in range(warmup):
             _ = model(sample_input)
@@ -292,6 +312,7 @@ def evaluate_pytorch_latency_and_estimate_size(
 
     latencies = []
 
+    # Measure latency.
     with torch.no_grad():
         for _ in range(runs):
             if device.type == "cuda":
