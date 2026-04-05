@@ -13,7 +13,7 @@ from .model_configs import SimpleMLPConfig
 def _scale_to_discrete(x: torch.Tensor, low: int, high: int) -> torch.Tensor:
 
     # get the appropriate real number between the high and low values
-    real_numbers = x * (high - low + 1)
+    real_numbers = x * (high - low + 1) + low
 
     # round the number down
     raw_integers = real_numbers.floor()
