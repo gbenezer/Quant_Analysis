@@ -19,7 +19,8 @@ from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 
 class SuperconductorLightning(L.LightningModule):
     """
-    _summary_
+    PyTorch Lightning wrapper for specification of training, validation, testing, and optimizer configuration
+    of SimpleMLP neural networks trained on superconductor critical temperature prediction data.
     """
 
     def __init__(
@@ -34,24 +35,24 @@ class SuperconductorLightning(L.LightningModule):
         self.lr = learning_rate
 
     def forward(self, x: torch.Tensor):
-        """_summary_
+        """Forward pass through the neural network
 
         Args:
-            x (torch.Tensor): _description_
+            x (torch.Tensor): a set of superconductor material features
 
         Returns:
-            _type_: _description_
+            torch.Tensor: predicted critical temperatures
         """
         return self.model(x)
 
     def training_step(self, batch: torch.Tensor):
-        """_summary_
+        """The training step for neural network backpropagation
 
         Args:
-            batch (torch.Tensor): _description_
+            batch (torch.Tensor): a set of superconductor material features
 
         Returns:
-            _type_: _description_
+            torch.Tensor: the mean absolute error in predicting critical temperatures
         """
         # get the data for the mini-batch
         inputs, target = batch
@@ -69,10 +70,10 @@ class SuperconductorLightning(L.LightningModule):
         return loss
 
     def validation_step(self, batch: torch.Tensor):
-        """_summary_
+        """The validation step for neural network training
 
         Args:
-            batch (torch.Tensor): _description_
+            batch (torch.Tensor): a set of superconductor material features
         """
         # get the data for the mini-batch
         inputs, target = batch
@@ -84,10 +85,10 @@ class SuperconductorLightning(L.LightningModule):
         self.log("valid_loss", loss)
 
     def test_step(self, batch: torch.Tensor):
-        """_summary_
+        """The testing step for neural network evaluation
 
         Args:
-            batch (torch.Tensor): _description_
+            batch (torch.Tensor): a set of superconductor material features
         """
         # get the data for the mini-batch
         inputs, target = batch
@@ -107,7 +108,7 @@ class SuperconductorLightning(L.LightningModule):
 def construct_mlp(
     config: SimpleMLPConfig,
     learning_rate: float = 1e-3,
-    max_epochs: int = 1000,
+    max_epochs: int = 25,
     name: str = "placeholder_name",
     logging_directory: Path = (Path.cwd() / "models" / "logs"),
     checkpoint_directory: Path = (Path.cwd() / "models" / "checkpoints"),
@@ -119,15 +120,33 @@ def construct_mlp(
     batch_n: int = 64,
     save_output: bool = False,
 ):
-    """
-    Input: Takes the config provided (via model_configs.py), adds name to id the type of quantization performed,
-    adds training hyperparameters, and trains the model.
+    """A convenience function to construct a SimpleMLP (feedforward neural network),
+    train it on superconductivity critical temperature prediction using PyTorch Lightning,
+    and output logs, a checkpoint file, a JSON file storing the SimpleMLPConfig parameters,
+    along with a state dictionary.
 
     Args:
-        config: The configuration for the MLP model.
-        name: id to reference the model
+        config (SimpleMLPConfig): the SimpleMLPConfig dataclass specifying the feedforward network architecture
+        learning_rate (float, optional): the learning rate to set. Defaults to 1e-3.
+        max_epochs (int, optional): the number of training epochs. 
+            max refers to a prior iteration where early stopping was implemented. Defaults to 25.
+        name (str, optional): model name to save all files to. Defaults to "placeholder_name".
+        logging_directory (Path, optional): directory to save PyTorch Lightning logfiles to. 
+            Defaults to (Path.cwd() / "models" / "logs").
+        checkpoint_directory (Path, optional): directory to save PyTorch Lightning checkpoint file to.
+            Defaults to (Path.cwd() / "models" / "checkpoints").
+        config_directory (Path, optional): directory to save SimpleMLPConfig parameters to (in a JSON file).
+            Defaults to (Path.cwd() / "models" / "configs").
+        state_dict_directory (Path, optional): directory to save PyTorch state dictionary
+            (including SimpleMLPConfig parameters) to. Defaults to (Path.cwd() / "models" / "state_dicts").
+        test_fraction (float, optional): Fraction of superconductivity data to use as test partition. Defaults to 0.2.
+        seed (int | None, optional): random seed. Defaults to 42.
+        n_workers (int, optional): number of workers/threads to allow dataloader to use. Defaults to 4.
+        batch_n (int, optional): number of sample points per batch. Defaults to 64.
+        save_output (bool, optional): whether or not to save any external files. Defaults to False.
 
-    Output: the trained model state dict, config, and csv logs.
+    Returns:
+        SimpleMLP: the trained SimpleMLP feedforward PyTorch nn.Module neural network
     """
     seed_everything(seed)
 
