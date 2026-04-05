@@ -7,6 +7,16 @@ from src.quant_analysis.model_architecture import SimpleMLP, SimpleMLPConfig
 
 
 def load_mlp_from_pth(path: Path, device="cpu") -> SimpleMLP:
+    """Function to take a SimpleMLP saved as a .pth file and reload it
+    into the Python environment
+
+    Args:
+        path (Path): the .pth file path for the saved model
+        device (str, optional): where to load the model to. Defaults to "cpu".
+
+    Returns:
+        SimpleMLP: a SimpleMLP neural network derived from the .pth file
+    """
     checkpoint = torch.load(path, map_location=device)
 
     config = SimpleMLPConfig(**checkpoint["config"])
