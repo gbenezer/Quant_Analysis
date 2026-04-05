@@ -12,7 +12,7 @@ class EncoderRegressor(nn.Module):
     def __init__(self, config: EncoderRegressorConfig):
         """Initialize the encoder regressor.
 
-        Args:
+        Params:
             config: Configuration dataclass specifying model architecture.
 
         Raises:
@@ -79,7 +79,12 @@ class EncoderRegressor(nn.Module):
         self._init_weights()
 
     def _validate_config(self) -> None:
-        """Validate configuration parameters."""
+        """
+        Validate configuration parameters for consistency and correctness.
+
+        Raises:
+            ValueError - If any configuration parameter is invalid.
+        """
         if self.config.model_dim % self.config.n_heads_encoder != 0:
             raise ValueError(
                 f"model_dim ({self.config.model_dim}) must be divisible by "
@@ -97,7 +102,13 @@ class EncoderRegressor(nn.Module):
             )
 
     def _init_weights(self) -> None:
-        """Initialize model weights using Xavier uniform for linear layers."""
+        """
+        Initialize model parameters.
+
+        Additional behavior:
+            - For deep encoders (n_layers_encoder > 6), residual projections
+            are scaled to improve training stability.
+        """
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight)
@@ -121,7 +132,11 @@ class EncoderRegressor(nn.Module):
             nn.init.normal_(self.cls_token, std=0.02)
 
     def _scale_residual_weights(self) -> None:
-        """Scale output projections to stabilize deep networks."""
+        """
+        Scale residual projection weights for deep transformer networks.
+
+        This helps stabilize training when using many encoder layers.
+        """
         scale = (2 * self.config.n_layers_encoder) ** -0.5
 
         for name, param in self.named_parameters():
@@ -136,7 +151,7 @@ class EncoderRegressor(nn.Module):
     ) -> torch.Tensor:
         """Pool sequence representation to a single vector.
 
-        Args:
+        Params:
             x: Encoded sequence of shape (batch, seq_len, model_dim) if batch_first,
                else (seq_len, batch, model_dim).
             padding_mask: Optional boolean mask where True indicates padded positions.
@@ -180,7 +195,7 @@ class EncoderRegressor(nn.Module):
     ) -> torch.Tensor:
         """Forward pass through the encoder regressor.
 
-        Args:
+        Params:
             x: Input tensor of shape (batch, seq_len, input_dim) if batch_first,
                else (seq_len, batch, input_dim).
             src_key_padding_mask: Optional boolean mask where True indicates
