@@ -8,17 +8,39 @@ from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 
 
 class SimpleMLP(nn.Module):
+    """A class defining a simple feedforward neural network
+
+    Args:
+        nn (nn.Module): the PyTorch nn.Module neural network superclass
+    """
     def __init__(
         self,
         config: SimpleMLPConfig,
     ):
+        """Constructor for the simple feedforward network given a SimpleMLPConfig
+        dataclass containing the necessary arguments
+
+        Args:
+            config (SimpleMLPConfig): The config dataclass containing layer widths,
+                activation function, and whether or not to use 1D batch normalization between layers
+
+        Raises:
+            ValueError: If the number of layers is zero, raises a ValueError
+            ValueError: If the width of a single layer is not positive, raises a ValueError
+            ValueError: If the activation function specified is not in the set ["relu", "leaky_relu", "elu", "gelu", "celu"],
+                raises a ValueError
+        """
         super().__init__()
 
         self.config = config
 
         # validate input
         if len(self.config.neurons_per_layer) <= 0:
-            raise ValueError("The number of layer widths has to be positive")
+            raise ValueError("There has to be a positive number of layers")
+        
+        for width in self.config.neurons_per_layer:
+            if width <= 0:
+                raise ValueError("Each layer has to have a positive width")
 
         if self.config.activation not in ["relu", "leaky_relu", "elu", "gelu", "celu"]:
             raise ValueError(
@@ -93,13 +115,13 @@ class SimpleMLP(nn.Module):
         self.linear_stack = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor):
-        """_summary_
+        """Defines the forward pass of the neural network
 
         Args:
-            x (torch.Tensor): _description_
+            x (torch.Tensor): the input sample data
 
         Returns:
-            _type_: _description_
+            torch.Tensor: the output activations
         """
         return self.linear_stack(x).squeeze()
 
