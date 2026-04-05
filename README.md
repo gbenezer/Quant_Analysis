@@ -173,7 +173,7 @@ The `quant_analysis` package exposes its main components through `src/quant_anal
 
 ```python
 import torch
-from quant_analysis import (
+from src.quant_analysis import (
     SimpleMLPConfig,
     construct_mlp,
     run_ptq,
