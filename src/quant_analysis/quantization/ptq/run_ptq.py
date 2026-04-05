@@ -407,7 +407,6 @@ if __name__ == "__main__":
     from data.load_data import get_superconductivity_data
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device = "cpu"
     print(f"Using device: {device}")
 
     print("loading model")
@@ -441,10 +440,7 @@ if __name__ == "__main__":
     train_loader_full_df = ptq_results_to_dataframe(train_loader_full_output)
     print(train_loader_full_df.head())
     print(train_loader_full_df.info())
-    # train_loader_full_df.to_csv(
-    #     Path.cwd() / "data" / "output" / f"baseline_model_results_{device}.csv"
-    # )
-
+    
     # testing the size estimation
     train_loader_relative_size_df = train_loader_full_df.query(
         "base_metric == 'model_size' and relative == True"
@@ -464,9 +460,3 @@ if __name__ == "__main__":
     train_loader_weight_df = ptq_results_to_dataframe(train_loader_weight_output)
     print(train_loader_weight_df.head())
     print(train_loader_weight_df.info())
-    # train_loader_weight_df.to_csv(
-    #     Path.cwd()
-    #     / "data"
-    #     / "output"
-    #     / f"baseline_model_results_weight_only_{device}.csv"
-    # )

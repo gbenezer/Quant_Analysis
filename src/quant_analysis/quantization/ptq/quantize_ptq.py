@@ -39,36 +39,6 @@ def fuse_mlp_bn(model: SimpleMLP) -> SimpleMLP:
     return new_model
 
 
-# helper function to evaluate which layers of an Int4 quantized model are actually quantized
-# to prevent silent failure
-def check_int4_quantization(model: nn.Module) -> Dict[str, Dict[str, Any]]:
-
-    results = {}
-
-    for name, module in model.named_modules():
-        entry = {
-            "module_type": type(module).__name__,
-            "has_weight": False,
-            "is_int4_quantized": False,
-        }
-
-        if hasattr(module, "weight"):
-            entry["has_weight"] = True
-
-            try:
-                weight = module.weight
-
-                if isinstance(weight, Int4Tensor):
-                    entry["is_int4_quantized"] = True
-
-            except Exception:
-                pass
-
-        results[name] = entry
-
-    return results
-
-
 def quantize_ptq(
     base_model: Union[nn.Module, SimpleMLP],
     ao_config: type[AOBaseConfig],
