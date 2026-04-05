@@ -111,7 +111,7 @@ Dependencies are declared in `pyproject.toml`. Key packages include:
 Supported quantization schemes (defined in `ptq_config_metadata.py`), though issues may arise due to dimensionality of your models being incompatible with default quantization granularities:
 
 | Scheme | Type | Bits/Weight | Dynamic Calibration | Minimum CUDA Compute Capability | Compatibility Notes |
-|---|---|---|---|
+|---|---|---|---|---|---|
 | `int8wo` | Weight-only | 8 | No | 8.6 | |
 | `float8wo` | Weight-only | 8 | No | 8.6 | ONNX incompatible given `float8e4m3fn` default TorchAO float format |
 | `float8_dynamic_activation_float8_weight` | Weight + Activation | 8 | Yes | 8.6 | |
