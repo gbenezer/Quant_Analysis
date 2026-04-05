@@ -11,6 +11,100 @@ from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
 from src.quant_analysis.quantization.ptq.ptq_config_metadata import ConfigAndMetadataPTQ
 from src.quant_analysis.quantization.ptq.run_ptq import build_quantized_models, run_ptq
 
+# ---------------------------------------------------------------------------
+# CNN / RNN helpers
+# ---------------------------------------------------------------------------
+
+_SEQ_LEN = 8
+
+
+class TinyCNNRegressor(nn.Module):
+    """Conv1d + Linear regression model. Accepts (batch, _SEQ_LEN) input."""
+
+    def __init__(self):
+        super().__init__()
+        self.conv_block = nn.Sequential(
+            nn.Conv1d(1, 4, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(4, 8, kernel_size=3, padding=1),
+            nn.ReLU(),
+        )
+        self.head = nn.Linear(8 * _SEQ_LEN, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(1)       # (B, seq_len) → (B, 1, seq_len)
+        x = self.conv_block(x)   # (B, 8, seq_len)
+        return self.head(x.flatten(1)).squeeze(1)
+
+
+class TinyGRURegressor(nn.Module):
+    """GRU + Linear regression model. Accepts (batch, _SEQ_LEN) input."""
+
+    def __init__(self):
+        super().__init__()
+        self.gru = nn.GRU(input_size=1, hidden_size=16, batch_first=True)
+        self.head = nn.Linear(16, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(-1)       # (B, seq_len) → (B, seq_len, 1)
+        out, _ = self.gru(x)
+        return self.head(out[:, -1, :]).squeeze(1)
+
+
+class TinyLSTMRegressor(nn.Module):
+    """LSTM + Linear regression model. Accepts (batch, _SEQ_LEN) input."""
+
+    def __init__(self):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size=1, hidden_size=16, batch_first=True)
+        self.head = nn.Linear(16, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(-1)
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :]).squeeze(1)
+
+
+class TinyTransformerRegressor(nn.Module):
+    """Small encoder-only transformer regression model.
+
+    Accepts a flat (batch, N_TOKENS * IN_FEATURES) input. IN_FEATURES=16 ensures
+    all nn.Linear layers meet TorchAO's minimum in_features requirement.
+    All evaluators in run_ptq are mocked in these tests so the model is never
+    actually called with the shared _SEQ_LEN=8 dataloader data.
+    """
+
+    N_TOKENS = 2
+    IN_FEATURES = 16
+    D_MODEL = 16
+    NHEAD = 2
+
+    def __init__(self):
+        super().__init__()
+        self.input_proj = nn.Linear(self.IN_FEATURES, self.D_MODEL)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.D_MODEL,
+            nhead=self.NHEAD,
+            dim_feedforward=32,
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        self.head = nn.Linear(self.D_MODEL, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.view(x.size(0), self.N_TOKENS, self.IN_FEATURES)
+        x = self.input_proj(x)      # (B, N_TOKENS, D_MODEL)
+        x = self.encoder(x)         # (B, N_TOKENS, D_MODEL)
+        x = x.mean(dim=1)           # global average pooling: (B, D_MODEL)
+        return self.head(x).squeeze(1)  # (B,)
+
+
+def make_seq_dataloader(n_samples: int = 32, batch_size: int = 8) -> DataLoader:
+    """Dataloader yielding (batch, _SEQ_LEN) tensors, compatible with CNN, RNN, and Transformer architectures."""
+    x = torch.randn(n_samples, _SEQ_LEN)
+    y = torch.randn(n_samples)
+    return DataLoader(TensorDataset(x, y), batch_size=batch_size)
+
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -438,3 +532,79 @@ class TestRunPtqModelFusion:
              patch(f"{_MOD}.fuse_mlp_bn") as mock_fuse:
             run_ptq(model, loader, runs=2, warmup=1)
         mock_fuse.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "model_cls",
+        [TinyCNNRegressor, TinyGRURegressor, TinyLSTMRegressor, TinyTransformerRegressor],
+        ids=["cnn", "gru", "lstm", "transformer"],
+    )
+    def test_cnn_and_rnn_architectures_do_not_trigger_fuse_mlp_bn(self, model_cls):
+        model = model_cls()
+        loader = make_seq_dataloader()
+        with _MinimalPatches(_one_config_dict()), \
+             patch(f"{_MOD}.fuse_mlp_bn") as mock_fuse:
+            run_ptq(model, loader, runs=2, warmup=1)
+        mock_fuse.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# TestRunPtqWithNonSimpleMLP  — CNN, GRU, LSTM compatibility
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "model_cls",
+    [TinyCNNRegressor, TinyGRURegressor, TinyLSTMRegressor, TinyTransformerRegressor],
+    ids=["cnn", "gru", "lstm", "transformer"],
+)
+class TestRunPtqWithNonSimpleMLP:
+    """Verify run_ptq produces the correct output structure and honours the
+    same contracts for CNN and RNN base models as it does for SimpleMLP."""
+
+    def test_returns_dict(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        with _MinimalPatches(_one_config_dict()):
+            result = run_ptq(model, loader, runs=2, warmup=1)
+        assert isinstance(result, dict)
+
+    def test_result_contains_config_name(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        with _MinimalPatches(_one_config_dict()):
+            result = run_ptq(model, loader, runs=2, warmup=1)
+        assert "cfg1" in result
+
+    def test_pytorch_result_keys_present(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        with _MinimalPatches(_one_config_dict()):
+            result = run_ptq(model, loader, runs=2, warmup=1)
+        pytorch = result["cfg1"]["pytorch_result"]
+        for key in (
+            "quantized_MAE", "relative_MAE",
+            "quantized_model_size",
+            "quantized_median_latency", "quantized_p95_latency", "quantized_p99_latency",
+            "relative_model_size",
+            "relative_median_latency", "relative_p95_latency", "relative_p99_latency",
+        ):
+            assert key in pytorch
+
+    def test_weight_only_true_includes_onnx_and_pt2_results(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        with _MinimalPatches(_one_config_dict(), weight_only=True):
+            result = run_ptq(model, loader, weight_only=True, runs=2, warmup=1)
+        assert "onnx_result" in result["cfg1"]
+        assert "pt2_result" in result["cfg1"]
+
+    def test_baseline_mae_failure_raises_runtime_error(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        with patch(f"{_MOD}.build_quantized_models", return_value={}), \
+             patch(f"{_MOD}.evaluate_mae", side_effect=RuntimeError("fail")):
+            with pytest.raises(RuntimeError):
+                run_ptq(model, loader, runs=2, warmup=1)
+
+    def test_does_not_mutate_base_model_parameters(self, model_cls):
+        model, loader = model_cls(), make_seq_dataloader()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        with _MinimalPatches(_one_config_dict()):
+            run_ptq(model, loader, runs=2, warmup=1)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was mutated"

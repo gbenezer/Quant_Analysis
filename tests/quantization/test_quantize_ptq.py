@@ -4,6 +4,7 @@ import pytest
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
+from torchao.quantization import Int8DynamicActivationInt8WeightConfig, Int8WeightOnlyConfig
 
 from src.quant_analysis.model_architecture.model_configs import SimpleMLPConfig
 from src.quant_analysis.model_architecture.simple_mlp import SimpleMLP
@@ -305,3 +306,513 @@ class TestQuantizePtq:
         # Each captured input should have shape (batch_size, input_dim), not include labels
         for inp in forward_inputs:
             assert inp.shape[-1] == 8
+
+
+# ---------------------------------------------------------------------------
+# CNN helper
+# ---------------------------------------------------------------------------
+
+
+class TinyCNNRegressor(nn.Module):
+    """Small 1-D convolutional regression network.
+
+    Accepts input of shape (batch, seq_len) and returns a scalar per sample.
+    Uses Conv1d + Linear so both layer types are present in the network,
+    exercising quantization behaviour on non-SimpleMLP architectures.
+    """
+
+    SEQ_LEN = 8
+
+    def __init__(self):
+        super().__init__()
+        self.conv_block = nn.Sequential(
+            nn.Conv1d(1, 4, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv1d(4, 8, kernel_size=3, padding=1),
+            nn.ReLU(),
+        )
+        self.head = nn.Linear(8 * self.SEQ_LEN, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(1)          # (B, seq_len) → (B, 1, seq_len)
+        x = self.conv_block(x)      # (B, 8, seq_len)
+        x = x.flatten(1)            # (B, 8 * seq_len)
+        return self.head(x).squeeze(1)
+
+
+def make_cnn_dataloader(n_samples: int = 16, batch_size: int = 4) -> DataLoader:
+    x = torch.randn(n_samples, TinyCNNRegressor.SEQ_LEN)
+    y = torch.randn(n_samples)
+    return DataLoader(TensorDataset(x, y), batch_size=batch_size)
+
+
+def make_cnn_input(batch: int = 2) -> torch.Tensor:
+    return torch.randn(batch, TinyCNNRegressor.SEQ_LEN)
+
+
+# ---------------------------------------------------------------------------
+# TestQuantizePtqWithCNN  — structural (mock-based) tests
+# ---------------------------------------------------------------------------
+
+
+class TestQuantizePtqWithCNN:
+    """Verify that quantize_ptq satisfies the same contract for CNN models
+    as it does for SimpleMLP, and that it is compatible with real TorchAO
+    weight-only and dynamic INT8 configurations on CPU."""
+
+    # -- structural / mock-based --
+
+    def test_returns_nn_module(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert isinstance(result, nn.Module)
+
+    def test_does_not_modify_base_model(self):
+        model = TinyCNNRegressor()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        with patch(_QUANTIZE_):
+            quantize_ptq(model, _mock_config(), is_static=False)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was modified"
+
+    def test_returned_model_is_in_eval_mode(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert not result.training
+
+    def test_model_placed_on_cpu(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), quantize_device="cpu")
+        for param in result.parameters():
+            assert param.device.type == "cpu"
+
+    def test_does_not_call_fuse_mlp_bn(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    def test_returns_none_on_assertion_error(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_, side_effect=AssertionError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_returns_none_on_runtime_error(self):
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_, side_effect=RuntimeError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_is_not_treated_as_simple_mlp(self):
+        """CNN should not go through the SimpleMLP-specific BN-fusion code path."""
+        model = TinyCNNRegressor()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    # -- integration tests with real TorchAO configs --
+
+    def test_int8_weight_only_returns_nn_module(self):
+        model = TinyCNNRegressor()
+        result = quantize_ptq(
+            model, Int8WeightOnlyConfig, is_static=False, version=2
+        )
+        assert isinstance(result, nn.Module)
+
+    def test_int8_dynamic_returns_nn_module(self):
+        model = TinyCNNRegressor()
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert isinstance(result, nn.Module)
+
+    def test_int8_weight_only_preserves_output_shape(self):
+        model = TinyCNNRegressor()
+        x = make_cnn_input(batch=4)
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_dynamic_preserves_output_shape(self):
+        model = TinyCNNRegressor()
+        x = make_cnn_input(batch=4)
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_weight_only_does_not_mutate_base_model(self):
+        model = TinyCNNRegressor()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was mutated"
+
+    def test_int8_dynamic_calibrates_with_dataloader(self):
+        """Static path: CNN passes calibration data through without error."""
+        model = TinyCNNRegressor()
+        data = make_cnn_dataloader()
+
+        with patch(_SUPPORTS_STEP, return_value=True), patch(_QUANTIZE_) as mock_q:
+            result = quantize_ptq(
+                model, _mock_config(), is_static=True, data=data
+            )
+
+        assert result is not None
+        assert mock_q.call_count == 2  # prepare + convert
+
+
+# ---------------------------------------------------------------------------
+# RNN helpers (shared by GRU and LSTM tests)
+# ---------------------------------------------------------------------------
+
+
+class TinyGRURegressor(nn.Module):
+    """Small GRU regression model. Accepts (batch, SEQ_LEN) input."""
+
+    SEQ_LEN = 8
+    HIDDEN_SIZE = 16
+
+    def __init__(self):
+        super().__init__()
+        self.gru = nn.GRU(input_size=1, hidden_size=self.HIDDEN_SIZE, batch_first=True)
+        self.head = nn.Linear(self.HIDDEN_SIZE, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(-1)            # (B, seq_len) → (B, seq_len, 1)
+        out, _ = self.gru(x)
+        return self.head(out[:, -1, :]).squeeze(1)
+
+
+class TinyLSTMRegressor(nn.Module):
+    """Small LSTM regression model. Accepts (batch, SEQ_LEN) input."""
+
+    SEQ_LEN = 8
+    HIDDEN_SIZE = 16
+
+    def __init__(self):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size=1, hidden_size=self.HIDDEN_SIZE, batch_first=True)
+        self.head = nn.Linear(self.HIDDEN_SIZE, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = x.unsqueeze(-1)
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :]).squeeze(1)
+
+
+class TinyTransformerRegressor(nn.Module):
+    """Small encoder-only transformer regression model.
+
+    Accepts a flat (batch, N_TOKENS * IN_FEATURES) input, reshapes it into
+    N_TOKENS tokens of IN_FEATURES each, projects to D_MODEL, runs one
+    TransformerEncoder layer, global-average-pools, and regresses to a scalar.
+
+    IN_FEATURES=16 ensures all nn.Linear layers meet TorchAO's minimum
+    in_features requirement for weight-only quantization.
+    """
+
+    N_TOKENS = 2
+    IN_FEATURES = 16
+    D_MODEL = 16
+    NHEAD = 2
+
+    def __init__(self):
+        super().__init__()
+        self.input_proj = nn.Linear(self.IN_FEATURES, self.D_MODEL)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=self.D_MODEL,
+            nhead=self.NHEAD,
+            dim_feedforward=32,
+            batch_first=True,
+        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=1)
+        self.head = nn.Linear(self.D_MODEL, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # (B, N_TOKENS * IN_FEATURES) → (B, N_TOKENS, IN_FEATURES)
+        x = x.view(x.size(0), self.N_TOKENS, self.IN_FEATURES)
+        x = self.input_proj(x)      # (B, N_TOKENS, D_MODEL)
+        x = self.encoder(x)         # (B, N_TOKENS, D_MODEL)
+        x = x.mean(dim=1)           # global average pooling: (B, D_MODEL)
+        return self.head(x).squeeze(1)  # (B,)
+
+
+def make_rnn_input(batch: int = 4) -> torch.Tensor:
+    return torch.randn(batch, TinyGRURegressor.SEQ_LEN)
+
+
+def make_rnn_dataloader(n_samples: int = 16, batch_size: int = 4) -> DataLoader:
+    x = torch.randn(n_samples, TinyGRURegressor.SEQ_LEN)
+    y = torch.randn(n_samples)
+    return DataLoader(TensorDataset(x, y), batch_size=batch_size)
+
+
+def make_transformer_input(batch: int = 4) -> torch.Tensor:
+    total = TinyTransformerRegressor.N_TOKENS * TinyTransformerRegressor.IN_FEATURES
+    return torch.randn(batch, total)
+
+
+def make_transformer_dataloader(n_samples: int = 16, batch_size: int = 4) -> DataLoader:
+    total = TinyTransformerRegressor.N_TOKENS * TinyTransformerRegressor.IN_FEATURES
+    x = torch.randn(n_samples, total)
+    y = torch.randn(n_samples)
+    return DataLoader(TensorDataset(x, y), batch_size=batch_size)
+
+
+# ---------------------------------------------------------------------------
+# TestQuantizePtqWithRNN  — covers GRU and LSTM via parametrize
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "model_cls",
+    [TinyGRURegressor, TinyLSTMRegressor],
+    ids=["gru", "lstm"],
+)
+class TestQuantizePtqWithRNN:
+    """Verify quantize_ptq satisfies the same contract for GRU and LSTM models
+    as it does for SimpleMLP, and is compatible with real TorchAO INT8 configs on CPU."""
+
+    # -- structural / mock-based --
+
+    def test_returns_nn_module(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert isinstance(result, nn.Module)
+
+    def test_does_not_modify_base_model(self, model_cls):
+        model = model_cls()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        with patch(_QUANTIZE_):
+            quantize_ptq(model, _mock_config(), is_static=False)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was modified"
+
+    def test_returned_model_is_in_eval_mode(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert not result.training
+
+    def test_model_placed_on_cpu(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), quantize_device="cpu")
+        for param in result.parameters():
+            assert param.device.type == "cpu"
+
+    def test_does_not_call_fuse_mlp_bn(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    def test_returns_none_on_assertion_error(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_, side_effect=AssertionError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_returns_none_on_runtime_error(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_, side_effect=RuntimeError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_is_not_treated_as_simple_mlp(self, model_cls):
+        model = model_cls()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    # -- integration tests with real TorchAO configs --
+
+    def test_int8_weight_only_returns_nn_module(self, model_cls):
+        model = model_cls()
+        result = quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        assert isinstance(result, nn.Module)
+
+    def test_int8_dynamic_returns_nn_module(self, model_cls):
+        model = model_cls()
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert isinstance(result, nn.Module)
+
+    def test_int8_weight_only_preserves_output_shape(self, model_cls):
+        model = model_cls()
+        x = make_rnn_input()
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_dynamic_preserves_output_shape(self, model_cls):
+        model = model_cls()
+        x = make_rnn_input()
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_weight_only_does_not_mutate_base_model(self, model_cls):
+        model = model_cls()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was mutated"
+
+    def test_static_calibration_path_works(self, model_cls):
+        """Static path: model passes calibration data through without error."""
+        model = model_cls()
+        data = make_rnn_dataloader()
+        with patch(_SUPPORTS_STEP, return_value=True), patch(_QUANTIZE_) as mock_q:
+            result = quantize_ptq(model, _mock_config(), is_static=True, data=data)
+        assert result is not None
+        assert mock_q.call_count == 2  # prepare + convert
+
+
+# ---------------------------------------------------------------------------
+# TestQuantizePtqWithTransformer
+# ---------------------------------------------------------------------------
+
+
+class TestQuantizePtqWithTransformer:
+    """Verify quantize_ptq satisfies the same contract for an encoder-only
+    transformer model, and is compatible with real TorchAO INT8 configs on CPU."""
+
+    # -- structural / mock-based --
+
+    def test_returns_nn_module(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert isinstance(result, nn.Module)
+
+    def test_does_not_modify_base_model(self):
+        model = TinyTransformerRegressor()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        with patch(_QUANTIZE_):
+            quantize_ptq(model, _mock_config(), is_static=False)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was modified"
+
+    def test_returned_model_is_in_eval_mode(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), is_static=False)
+        assert not result.training
+
+    def test_model_placed_on_cpu(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_):
+            result = quantize_ptq(model, _mock_config(), quantize_device="cpu")
+        for param in result.parameters():
+            assert param.device.type == "cpu"
+
+    def test_does_not_call_fuse_mlp_bn(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    def test_returns_none_on_assertion_error(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_, side_effect=AssertionError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_returns_none_on_runtime_error(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_, side_effect=RuntimeError("fail")):
+            assert quantize_ptq(model, _mock_config(), is_static=False) is None
+
+    def test_is_not_treated_as_simple_mlp(self):
+        model = TinyTransformerRegressor()
+        with patch(_QUANTIZE_), patch(_FUSE_MLP_BN) as mock_fuse:
+            quantize_ptq(model, _mock_config(), is_static=False)
+        mock_fuse.assert_not_called()
+
+    # -- integration tests with real TorchAO configs --
+
+    def test_int8_weight_only_returns_nn_module(self):
+        model = TinyTransformerRegressor()
+        result = quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        assert isinstance(result, nn.Module)
+
+    def test_int8_dynamic_returns_nn_module(self):
+        model = TinyTransformerRegressor()
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert isinstance(result, nn.Module)
+
+    def test_int8_weight_only_preserves_output_shape(self):
+        model = TinyTransformerRegressor()
+        x = make_transformer_input(batch=4)
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_dynamic_preserves_output_shape(self):
+        model = TinyTransformerRegressor()
+        x = make_transformer_input(batch=4)
+        with torch.no_grad():
+            baseline_out = model.eval()(x)
+
+        result = quantize_ptq(
+            model, Int8DynamicActivationInt8WeightConfig, is_static=False, version=2
+        )
+        assert result is not None
+        with torch.no_grad():
+            quant_out = result(x)
+
+        assert quant_out.shape == baseline_out.shape
+
+    def test_int8_weight_only_does_not_mutate_base_model(self):
+        model = TinyTransformerRegressor()
+        params_before = {k: v.clone() for k, v in model.named_parameters()}
+        quantize_ptq(model, Int8WeightOnlyConfig, is_static=False, version=2)
+        for k, v in model.named_parameters():
+            assert torch.allclose(params_before[k], v), f"Parameter {k} was mutated"
+
+    def test_static_calibration_path_works(self):
+        """Static path: model passes calibration data through without error."""
+        model = TinyTransformerRegressor()
+        data = make_transformer_dataloader()
+        with patch(_SUPPORTS_STEP, return_value=True), patch(_QUANTIZE_) as mock_q:
+            result = quantize_ptq(model, _mock_config(), is_static=True, data=data)
+        assert result is not None
+        assert mock_q.call_count == 2  # prepare + convert
