@@ -128,6 +128,21 @@ def build_quantized_models(
     dataloader: DataLoader,
     quantization_device: str | torch.device = "cpu",
 ) -> Dict[str, Tuple[nn.Module, ConfigAndMetadataPTQ]]:
+    """Convenience function to take a base float32 PyTorch model and build a dictionary
+    of quantized models, given a compatible DataLoader object and dictionary of TorchAO
+    configurations coupled with relevant metadata
+
+    Args:
+        base_model (nn.Module): the base float32 model
+        configs (Dict[str, ConfigAndMetadataPTQ]): a dictionary of configuration names tied to
+            TorchAO PTQ configurations coupled with relevant metadata in a ConfigAndMetadataPTQ dataclass
+        dataloader (DataLoader): the PyTorch DataLoader object to use for any static PTQ configurations
+        quantization_device (str | torch.device, optional): the device to place the quantized models on. Defaults to "cpu".
+
+    Returns:
+        Dict[str, Tuple[nn.Module, ConfigAndMetadataPTQ]]: A dictionary of PTQ configuration names mapped to
+            both the PyTorch models and the ConfigAndMetadataPTQ dataclasses
+    """
     # initialize dictionary for model storage
     model_dict = {}
 
@@ -179,10 +194,36 @@ def run_ptq(
     print_debug: bool = False,
     weight_only: bool = False,
 ) -> Dict[str, QuantizationResult]:
+    """A function that takes a full precision float32 PyTorch model, executes multiple quantization approaches on copies,
+    and outputs a dictionary of metrics for each quantization approach
 
+    Args:
+        base_model (nn.Module): the full precision float32 PyTorch neural network model
+        dataloader (DataLoader): the PyTorch DataLoader to use for evaluation
+        evaluation_device (str | torch.device, optional): the device to evaluate the quantization approaches on. Defaults to "cpu".
+        batch_size (int, optional): the batch size for the DataLoader. Defaults to 128.
+        runs (int, optional): the number of inference runs to execute for latency metric distribution measurements. Defaults to 500.
+        warmup (int, optional): the number of inference runs to execute before measuring latency. Defaults to 50.
+        print_debug (bool, optional): whether or not to print all debug output to stdout. Defaults to False.
+        weight_only (bool, optional): whether or not to use solely weight-only configurations.
+            If true, this will also measure true model size and model latency with PT2 and ONNX exported versions of models.
+            Defaults to False.
+
+    Raises:
+        RuntimeError: If there are any issues with evaluating the mean absolute error of
+        the baseline full precision model, there is no point to continuing evaluations.
+
+    Returns:
+        Dict[str, QuantizationResult]: A dictionary mapping PTQ configurations and
+            associated metadata to error, size, and latency metrics
+            
+    Note: this code does not work with or for Int4 based TorchAO configurations due to the many issues we faced
+    in development, testing, and evaluation.
+    """
     # initialize the type of the output dict
     output_dict: Dict[str, QuantizationResult] = {}
 
+    # select the proper config dictionary to use
     if weight_only:
         quantization_configs = PTQ_WEIGHT_ONLY_CONFIG_METADATA
     else:
@@ -224,6 +265,8 @@ def run_ptq(
             f"The mean absolute error evaluation failed with exception {e}"
         )
 
+    # measure baseline performance in PyTorch eager-mode inference and estimate theoretical size
+    # due to issues with exporting quantized models in vanilla PyTorch
     baseline_size_latency_results = {
         "pytorch": evaluate_pytorch_latency_and_estimate_size(
             model=base_model,
@@ -267,14 +310,8 @@ def run_ptq(
 
         if print_debug:
             print(f"Evaluating {config_name} on PyTorch")
-
-        # Int4WeightOnlyConfig only works with BFloat16 inputs on GPU
-        if config_name == "Int4WeightOnlyConfig" and torch.device(
-            evaluation_device
-        ) == torch.device("cuda"):
-            input_dtype = torch.bfloat16
-        else:
-            input_dtype = torch.float32
+        
+        input_dtype = torch.float32
 
         # evaluate PyTorch performance
         pytorch_metric_dict: Dict[str, Any] = {}
@@ -323,6 +360,7 @@ def run_ptq(
             base_model_performance=baseline_size_latency_results["pytorch"],
         )
 
+        # store results as the appropriate datatype
         output_dict[config_name] = QuantizationResult(
             config=quant_metadata, pytorch_result=pytorch_metric_dict
         )
