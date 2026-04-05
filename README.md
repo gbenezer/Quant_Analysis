@@ -160,7 +160,13 @@ The `quant_analysis` package exposes its main components through `src/quant_anal
 
 ```python
 import torch
-from quant_analysis import SimpleMLPConfig, construct_mlp, run_ptq, PTQ_QUANT_CONFIG_METADATA
+from quant_analysis import (
+    SimpleMLPConfig,
+    construct_mlp,
+    run_ptq,
+    PTQ_QUANT_CONFIG_METADATA,
+    ptq_results_to_dataframe
+)
 from data.load_data import get_superconductivity_data
 
 # set random seed and other globals (for this script execution)
@@ -209,6 +215,10 @@ results = run_ptq(
     warmup=WARMUP,
     weight_only=False,
 )
+
+# convert the nested dictionary to a DataFrame for 
+# downstream processing and custom visualization
+result_dataframe = ptq_results_to_dataframe(results)
 ```
 
 ---
